@@ -3,7 +3,7 @@ import React from "react";
 import useAppStore from "../stores/appStore";
 
 const BottomNav = () => {
-  const { ui, setCurrentPage, toggleShop } = useAppStore();
+  const { ui, setCurrentPage } = useAppStore();
 
   const navItems = [
     { id: "timer", label: "Timer", icon: "⏲️" },
@@ -14,7 +14,8 @@ const BottomNav = () => {
 
   const handleNavClick = (id) => {
     if (id === "shop") {
-      toggleShop();
+      // Mobile: treat shop as a regular page
+      setCurrentPage("shop");
     } else {
       setCurrentPage(id);
     }
@@ -24,11 +25,13 @@ const BottomNav = () => {
   return (
     <div className="bottom-nav d-md-none">
       <div className="container-fluid">
-        <div className="row g-0">
+        <div className="row g-0 justify-content-center">
           {navItems.map((item) => (
-            <div key={item.id} className="col">
+            <div key={item.id} className="col d-flex justify-content-center">
               <button
-                className={`bottom-nav-item ${ui.currentPage === item.id ? "active" : ""}`}
+                className={`bottom-nav-item ${
+                  ui.currentPage === item.id ? "active" : ""
+                }`}
                 onClick={() => handleNavClick(item.id)}
                 aria-label={item.label}
               >

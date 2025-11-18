@@ -39,7 +39,7 @@ const BEAN_SHOP = [
   },
 ];
 
-const Shop = () => {
+const Shop = ({ showCloseButton = true }) => {
   const { user, shop, buyBean, selectBean, toggleShop } = useAppStore();
 
   const handleBuyBean = (bean) => {
@@ -57,7 +57,20 @@ const Shop = () => {
     <div className="shop-container">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="h4 fw-bold mb-0">🏪 Bean Shop</h2>
-        <div className="text-muted">💰 {user.xp} XP</div>
+        <div className="d-flex align-items-center gap-3">
+          <div className="text-muted">💰 {user.xp} XP</div>
+          {showCloseButton && (
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              onClick={toggleShop}
+              className="p-1"
+              aria-label="Close shop"
+            >
+              ✕
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="row g-3">
