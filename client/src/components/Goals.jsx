@@ -1,4 +1,4 @@
-// client/src/components/Goals.jsx
+3// client/src/components/Goals.jsx
 import React, { useState, useEffect } from 'react';
 import * as goalService from '../services/goalService';
 
