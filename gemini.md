@@ -1,25 +1,28 @@
-# Focus Friends MVP
+# Focus Friendship
 
-This project is the Minimum Viable Product (MVP) for "Focus Friends," a web application that gamifies focus sessions using a digital pet.
+This project is for "Focus Friendship," a web application that gamifies focus sessions using a digital pet.
 
-## Project Goal
+## Approved Technical Plan
 
-The goal is to build a functional and visually appealing prototype that includes the core features of the application.
+### Phase 1: Core Focus MVP
+This phase focuses on building the standalone Pomodoro and pet experience.
 
-## Technology Stack
+1.  **Project Setup:**
+    *   Use the name "Focus Friendship" in the application.
+    *   Copy the user-provided image to `client/src/assets/images/` for the pet component.
+2.  **Backend Setup (Simple):** Create a minimal Express server with `POST /api/sessions` and `POST /api/user/sync` endpoints for basic data logging.
+3.  **Frontend Service Layer:** Build `xpService` and `syncService` for local XP/level management and offline data queueing.
+4.  **Core UI Components:** Build the `Timer`, `CutieBean` (using the provided image), and `ConfirmModal` components.
+5.  **Styling, Testing, and Docs:** Complete the initial implementation as planned.
 
--   **Frontend:** React (with JavaScript)
--   **Styling:** Bootstrap and custom CSS, following Material Design principles.
--   **Backend:** Node.js with Express.js
--   **Package Manager:** npm
+### Phase 2: Social & Scheduling Features
+After the core application is working, build the social features on top of it.
 
-## Key Features
-
--   Pomodoro Timer
--   "Cutie Bean" digital companion that evolves
--   XP and Leveling System
--   Customization Shop
--   Friends List
+1.  **User Authentication:** Implement a "Sign in with Google" system.
+2.  **Database Integration:** Add a database to the backend to store users, friends, and session history.
+3.  **Friends System:** Create APIs and UI for users to add and view friends.
+4.  **Google Calendar Integration:** Connect to the Google Calendar API to schedule and view focus sessions.
+5.  **Social Accountability:** Display friend activity and status.
 
 ## Color Palette
 

@@ -25,6 +25,10 @@ module.exports = {
         test: /\.css$/,
         use: ["style-loader", "css-loader"],
       },
+      {
+        test: /\.(png|svg|jpg|jpeg|gif)$/i,
+        type: 'asset/resource',
+      },
     ],
   },
   plugins: [
@@ -38,7 +42,7 @@ module.exports = {
       directory: path.join(__dirname, "dist"),
     },
     compress: true,
-    port: 3000,
+    port: 8080,
     open: true,
     historyApiFallback: true,
   },
