@@ -1,111 +1,91 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import Timer from "./components/Timer";
 import CutieBean from "./components/CutieBean";
-import ConfirmModal from "./components/ConfirmModal";
+import Shop from "./components/Shop";
 import Goals from "./components/Goals";
-import { getUserState, applyPenalty, initializeUserState, addXP } from "./services/xpService";
-import * as goalService from "./services/goalService";
-import { enqueueForSync } from "./services/syncService";
+import BottomNav from "./components/BottomNav";
+import { Card } from "./components/ui";
+import useAppStore from "./stores/appStore";
 
 function App() {
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [confirmModalMessage, setConfirmModalMessage] = useState("");
-  const [confirmModalTitle, setConfirmModalTitle] = useState("");
-  const [onConfirmAction, setOnConfirmAction] = useState(() => () => {});
-  const [activeGoals, setActiveGoals] = useState([]);
-  const [selectedGoal, setSelectedGoal] = useState("");
+  const { ui, shop, initializeApp } = useAppStore();
 
   useEffect(() => {
-    initializeUserState();
-    setActiveGoals(goalService.getActiveGoals());
-  }, []);
+    initializeApp();
+  }, [initializeApp]);
 
-  const handleStopTimerWithPenalty = (stopTimerCallback) => {
-    const userState = getUserState();
-    if (userState.penaltiesEnabled) {
-      setConfirmModalTitle("Stop Timer?");
-      setConfirmModalMessage("Stopping will cost 10 XP and reset your streak. Confirm stop?");
-      setOnConfirmAction(() => () => {
-        applyPenalty({ type: 'manual_stop' });
-        enqueueForSync('session', {
-          sessionId: Date.now(),
-          startAt: null,
-          endAt: new Date().toISOString(),
-          durationSec: 0,
-          completed: false,
-          xpGained: 0,
-          interrupted: true,
-          penaltyApplied: true,
-          penaltyType: 'manual_stop',
-        });
-        enqueueForSync('user', getUserState());
-        stopTimerCallback();
-        setIsConfirmModalOpen(false);
-      });
-      setIsConfirmModalOpen(true);
-    } else {
-      stopTimerCallback();
-    }
-  };
-
-  const handleTimerComplete = (minutes, goalId) => {
-    console.log(`Timer completed for goal: ${goalId}`);
-    const baseXPGained = minutes * 10;
-    const { newState, levelUp } = addXP(baseXPGained);
-
-    if (goalId) {
-      const newGoals = goalService.completePomodoroForGoal(parseInt(goalId, 10));
-      setActiveGoals(newGoals.filter(g => g.completedPomodoros < g.pomodoros));
+  const renderMainContent = () => {
+    if (shop.isOpen) {
+      return (
+        <div className="row justify-content-center">
+          <div className="col-12 col-lg-8">
+            <Card>
+              <Shop />
+            </Card>
+          </div>
+        </div>
+      );
     }
 
-    enqueueForSync('session', {
-      sessionId: Date.now(),
-      startAt: new Date(Date.now() - minutes * 60 * 1000).toISOString(),
-      endAt: new Date().toISOString(),
-      durationSec: minutes * 60,
-      completed: true,
-      xpGained: baseXPGained, // Log base XP, bonus is handled client-side
-      interrupted: false,
-      penaltyApplied: false,
-      goalId: goalId,
-    });
-    enqueueForSync('user', newState);
+    // Default layout for timer page
+    return (
+      <div className="row g-3 g-md-4">
+        {/* Desktop: show all components, Mobile: show based on current page */}
+        <div
+          className={`col-12 col-lg-4 order-1 order-lg-1 ${ui.currentPage !== "profile" ? "d-block" : "d-none d-lg-block"}`}
+        >
+          <Card hover>
+            <CutieBean />
+          </Card>
+        </div>
 
-    if (levelUp) {
-      console.log("Level Up! New State:", newState);
-    }
+        <div
+          className={`col-12 col-lg-4 order-2 order-lg-2 ${ui.currentPage === "timer" ? "d-block" : "d-none d-lg-block"}`}
+        >
+          <Card>
+            <Timer />
+          </Card>
+        </div>
+
+        <div
+          className={`col-12 col-lg-4 order-3 order-lg-3 ${ui.currentPage === "goals" ? "d-block" : "d-none d-lg-block"}`}
+        >
+          <Card hover>
+            <Goals />
+          </Card>
+        </div>
+
+        {/* Mobile-only: Profile view */}
+        {ui.currentPage === "profile" && (
+          <div className="col-12 d-lg-none">
+            <Card>
+              <div className="text-center">
+                <CutieBean />
+                <div className="mt-4">
+                  <h5 className="fw-bold">Profile Settings</h5>
+                  <p className="text-muted">
+                    Coming soon! More profile features will be added here.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
-    <div className="App d-flex flex-column align-items-center min-vh-100 bg-background text-text p-4">
-      <h1 className="display-4 fw-bold mb-5">Focus Friendship</h1>
-      <div className="container">
-        <div className="row d-flex flex-column flex-md-row align-items-start justify-content-around w-100">
-          <div className="col-12 col-md-4 p-4">
-            <CutieBean />
-          </div>
-          <div className="col-12 col-md-4 p-4">
-            <Timer
-              onStopWithPenalty={handleStopTimerWithPenalty}
-              onTimerComplete={handleTimerComplete}
-              activeGoals={activeGoals}
-              selectedGoal={selectedGoal}
-              setSelectedGoal={setSelectedGoal}
-            />
-          </div>
-          <div className="col-12 col-md-4 p-4">
-            <Goals />
-          </div>
-        </div>
+    <div className="app-container bg-background text-text">
+      <div className="main-content">
+        <h1 className="app-title text-center fw-bold mb-4 mb-md-5">
+          🌱 Focus Friendship
+        </h1>
+
+        {renderMainContent()}
       </div>
 
-      <ConfirmModal
-        isOpen={isConfirmModalOpen}
-        onClose={() => setIsConfirmModalOpen(false)}
-        onConfirm={onConfirmAction}
-        title={confirmModalTitle}
-        message={confirmModalMessage}
-      />
+      <BottomNav />
     </div>
   );
 }

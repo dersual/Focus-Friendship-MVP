@@ -18,23 +18,358 @@ body {
 }
 
 /* Custom classes for project-specific colors */
-.text-text { color: var(--color-text); }
-.bg-background { background-color: var(--color-background); }
-.text-primary { color: var(--color-primary); }
-.bg-primary { background-color: var(--color-primary); }
-.text-secondary { color: var(--color-secondary); }
-.bg-secondary { background-color: var(--color-secondary); }
-.text-accent { color: var(--color-accent); }
-.bg-accent { background-color: var(--color-accent); }
+.text-text {
+  color: var(--color-text);
+}
+.bg-background {
+  background-color: var(--color-background);
+}
+.text-primary {
+  color: var(--color-primary);
+}
+.bg-primary {
+  background-color: var(--color-primary);
+}
+.text-secondary {
+  color: var(--color-secondary);
+}
+.bg-secondary {
+  background-color: var(--color-secondary);
+}
+.text-accent {
+  color: var(--color-accent);
+}
+.bg-accent {
+  background-color: var(--color-accent);
+}
 
-/* Override Bootstrap variables or add custom styles as needed */
-/* Example: Custom button style using primary color */
+/* Responsive Design Improvements */
+/* Mobile-first approach with better touch targets */
+
+/* Custom button styles with improved touch targets */
 .btn-primary-custom {
   background-color: var(--color-primary);
   border-color: var(--color-primary);
   color: white;
+  min-height: 44px; /* iOS accessibility guideline */
+  min-width: 44px;
+  padding: 12px 24px;
+  box-shadow: 0 2px 8px rgba(90, 182, 189, 0.3);
+  transition: all 0.3s ease;
 }
+
 .btn-primary-custom:hover {
-  background-color: #4a9ba0; /* Slightly darker primary for hover */
+  background-color: #4a9ba0;
   border-color: #4a9ba0;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(90, 182, 189, 0.4);
+}
+
+.btn-primary-custom:focus {
+  background-color: #4a9ba0;
+  border-color: #4a9ba0;
+  color: white;
+  box-shadow: 0 0 0 0.25rem rgba(90, 182, 189, 0.25);
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary);
+  border-color: var(--color-secondary);
+  color: var(--color-text);
+  min-height: 44px;
+  min-width: 44px;
+  padding: 12px 24px;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #94aed1;
+  border-color: #94aed1;
+  color: var(--color-text);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(164, 190, 219, 0.4);
+}
+
+.btn-accent {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: white;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 12px 24px;
+  transition: all 0.3s ease;
+}
+
+.btn-accent:hover {
+  background-color: #6b80bf;
+  border-color: #6b80bf;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(121, 144, 201, 0.4);
+}
+
+.btn-outline-danger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+/* Responsive Timer Circle */
+.timer-circle-container {
+  position: relative;
+  width: min(300px, 80vw);
+  height: min(300px, 80vw);
+  margin: 0 auto;
+}
+
+.timer-circle {
+  width: 100%;
+  height: 100%;
+}
+
+.timer-display {
+  font-size: clamp(1.5rem, 5vw, 3rem);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Responsive Layout Improvements */
+.app-container {
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.main-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Component Cards */
+.component-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  transition:
+    box-shadow 0.3s ease,
+    transform 0.2s ease;
+}
+
+.component-card:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.component-card-hover:hover {
+  transform: translateY(-2px);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 1rem 0.75rem 6rem 0.75rem; /* Extra bottom padding for nav */
+  }
+
+  .app-title {
+    font-size: 1.75rem !important;
+    margin-bottom: 1.5rem !important;
+    margin-top: 0.5rem !important;
+  }
+
+  .component-card {
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    border-radius: 12px;
+  }
+
+  .timer-controls {
+    gap: 12px !important;
+  }
+
+  .timer-controls .btn {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .timer-controls .d-flex {
+    gap: 8px !important;
+  }
+
+  .goal-selector {
+    width: 100%;
+  }
+
+  .goal-selector .form-select {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  .goals-container .row.g-2 {
+    margin-bottom: 1rem;
+  }
+
+  .goal-item {
+    padding: 1rem !important;
+  }
+}
+
+/* Bottom Navigation Styles */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1px solid var(--color-secondary);
+  padding: 0.5rem 0;
+  z-index: 1000;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  min-height: 60px;
+}
+
+.bottom-nav-item:hover,
+.bottom-nav-item.active {
+  color: var(--color-primary);
+  background-color: rgba(90, 182, 189, 0.1);
+}
+
+.bottom-nav-item .nav-icon {
+  font-size: 1.2rem;
+  margin-bottom: 0.25rem;
+}
+
+.bottom-nav-item .nav-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Shop Modal Styles */
+.shop-item {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.shop-item:hover {
+  transform: translateY(-2px);
+}
+
+.bean-emoji {
+  display: inline-block;
+  line-height: 1;
+}
+
+/* Goals Component Styles */
+.goal-item {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  background-color: #f8f9fa !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+.goal-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Form improvements */
+.form-control:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.25rem rgba(90, 182, 189, 0.25);
+}
+
+.form-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.25rem rgba(90, 182, 189, 0.25);
+}
+
+/* Button group spacing */
+.d-grid.gap-2 > .btn {
+  margin-bottom: 0;
+}
+
+.d-flex.gap-2 > .btn {
+  margin-bottom: 0;
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: 0.5rem 0.5rem 5.5rem 0.5rem; /* Reduced padding for very small screens */
+  }
+
+  .component-card {
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .timer-circle-container {
+    width: min(250px, 85vw);
+    height: min(250px, 85vw);
+  }
+
+  .app-title {
+    font-size: 1.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .goal-item {
+    padding: 0.75rem !important;
+  }
+
+  .btn-sm {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+
+  .shop-item .component-card {
+    padding: 0.75rem !important;
+  }
+
+  .bottom-nav {
+    padding: 0.25rem 0;
+  }
+
+  .bottom-nav-item {
+    min-height: 55px;
+    padding: 0.25rem;
+  }
+
+  .bottom-nav-item .nav-icon {
+    font-size: 1.1rem;
+  }
+
+  .bottom-nav-item .nav-label {
+    font-size: 0.7rem;
+  }
+}
+
+/* Desktop Enhancements */
+@media (min-width: 992px) {
+  .component-card {
+    padding: 3rem;
+  }
+
+  .timer-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .timer-controls .btn {
+    min-width: 120px;
+  }
 }
