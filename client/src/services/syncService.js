@@ -1,6 +1,6 @@
 // client/src/services/syncService.js
 
-const SYNC_QUEUE_KEY = 'ffm:queue';
+const SYNC_QUEUE_KEY = "ffm:queue";
 const SYNC_INTERVAL = 60 * 1000; // 1 minute
 
 let syncIntervalId = null;
@@ -36,9 +36,9 @@ export const enqueueForSync = (type, data) => {
 // Attempts to process the sync queue
 export const processSyncQueue = async () => {
   // Temporarily disable sync to prevent network errors in local development
-  console.log('Sync service temporarily disabled for local development');
+  console.log("Sync service temporarily disabled for local development");
   return;
-  
+
   const queue = getSyncQueue();
   if (queue.length === 0) {
     return;
@@ -55,16 +55,16 @@ export const processSyncQueue = async () => {
   for (const item of queue) {
     try {
       let response;
-      if (item.type === 'session') {
-        response = await fetch('http://localhost:3001/api/sessions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+      if (item.type === "session") {
+        response = await fetch("http://localhost:3001/api/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(item.data),
         });
-      } else if (item.type === 'user') {
-        response = await fetch('http://localhost:3001/api/user/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+      } else if (item.type === "user") {
+        response = await fetch("http://localhost:3001/api/user/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(item.data),
         });
       }
@@ -73,7 +73,11 @@ export const processSyncQueue = async () => {
         console.log(`Successfully synced ${item.type}:`, item.data);
         successfulSyncs.push(item);
       } else {
-        console.error(`Failed to sync ${item.type}:`, item.data, response ? response.statusText : 'Network error');
+        console.error(
+          `Failed to sync ${item.type}:`,
+          item.data,
+          response ? response.statusText : "Network error",
+        );
         // If a request fails, stop processing and retry later
         break;
       }
@@ -85,7 +89,7 @@ export const processSyncQueue = async () => {
   }
 
   // Remove successful syncs from the queue
-  const newQueue = queue.filter(item => !successfulSyncs.includes(item));
+  const newQueue = queue.filter((item) => !successfulSyncs.includes(item));
   saveSyncQueue(newQueue);
 
   if (newQueue.length === 0) {
@@ -115,8 +119,10 @@ export const stopSyncService = () => {
 };
 
 // Listen for online/offline events to trigger sync
-window.addEventListener('online', processSyncQueue);
-window.addEventListener('offline', () => console.log("Application is offline."));
+window.addEventListener("online", processSyncQueue);
+window.addEventListener("offline", () =>
+  console.log("Application is offline."),
+);
 
 // Initialize sync service on load
 startSyncService();

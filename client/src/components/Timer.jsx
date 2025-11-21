@@ -64,9 +64,9 @@ const Timer = () => {
     // Add XP to selected pet with potential bonus
     if (selectedPet && xpGained > 0) {
       // Determine task type based on goal or default to general
-      let taskType = 'general';
+      let taskType = "general";
       if (goalId && goals) {
-        const selectedGoal = goals.find(g => g.id === goalId);
+        const selectedGoal = goals.find((g) => g.id === goalId);
         if (selectedGoal?.category) {
           taskType = selectedGoal.category.toLowerCase();
         }
@@ -75,7 +75,7 @@ const Timer = () => {
       // Get pet's XP bonus for this task type
       const petConfig = petService.PET_TYPES[selectedPet.type];
       let petXP = xpGained;
-      
+
       if (petConfig && petConfig.specialty === taskType && petConfig.xpBonus) {
         petXP = Math.round(xpGained * petConfig.xpBonus);
       }
@@ -83,24 +83,26 @@ const Timer = () => {
       // Check for evolution before adding XP
       const previousLevel = selectedPet.level;
       const previousEvolution = petService.getPetEvolutionStage(selectedPet);
-      
+
       // Award XP to the pet
       addXPToPet(selectedPet.id, petXP);
-      
+
       // Check for evolution after adding XP
       const updatedPets = petService.getAllPets();
       const updatedPet = updatedPets[selectedPet.id];
-      
+
       if (updatedPet && updatedPet.level > previousLevel) {
         const newEvolution = petService.getPetEvolutionStage(updatedPet);
-        
+
         // Show evolution animation if the evolution stage changed
         if (newEvolution && newEvolution.level !== previousEvolution?.level) {
           setShowEvolution(updatedPet);
         }
       }
 
-      console.log(`Pet ${selectedPet.id} gained ${petXP} XP (${petXP !== xpGained ? 'with specialty bonus!' : 'base amount'})`);
+      console.log(
+        `Pet ${selectedPet.id} gained ${petXP} XP (${petXP !== xpGained ? "with specialty bonus!" : "base amount"})`,
+      );
     }
 
     // Show XP gained feedback
@@ -304,7 +306,7 @@ const Timer = () => {
       {/* Compact Settings Button */}
       {!isActive && (
         <div className="d-flex justify-content-center mb-3">
-          <button 
+          <button
             className="btn btn-outline-secondary btn-sm"
             onClick={() => setShowTimerSettings(true)}
           >
@@ -632,17 +634,22 @@ const Timer = () => {
             <div className="modal-dialog modal-dialog-centered" role="document">
               <div className="modal-content p-4 rounded shadow">
                 <div className="modal-header border-0 pb-3">
-                  <h5 className="modal-title fw-bold text-text">⚙️ Timer Settings</h5>
-                  <button 
-                    type="button" 
-                    className="btn-close" 
-                    aria-label="Close" 
+                  <h5 className="modal-title fw-bold text-text">
+                    ⚙️ Timer Settings
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    aria-label="Close"
                     onClick={() => setShowTimerSettings(false)}
                   ></button>
                 </div>
                 <div className="modal-body pt-0">
                   <div className="mb-3">
-                    <label htmlFor="work-duration" className="form-label small fw-semibold">
+                    <label
+                      htmlFor="work-duration"
+                      className="form-label small fw-semibold"
+                    >
                       Work Duration (minutes)
                     </label>
                     <input
@@ -656,12 +663,16 @@ const Timer = () => {
                       step="1"
                     />
                     <div className="form-text">
-                      1-120 minutes. Recommended: 25-45 minutes for optimal focus.
+                      1-120 minutes. Recommended: 25-45 minutes for optimal
+                      focus.
                     </div>
                   </div>
-                  
+
                   <div className="mb-3">
-                    <label htmlFor="break-duration" className="form-label small fw-semibold">
+                    <label
+                      htmlFor="break-duration"
+                      className="form-label small fw-semibold"
+                    >
                       Break Duration (minutes)
                     </label>
                     <input
@@ -705,7 +716,7 @@ const Timer = () => {
             const updatedPet = updatedPets[selectedPet.id];
             if (updatedPet) {
               // This would be handled by the store, but we can refresh here too
-              console.log('Evolution animation complete');
+              console.log("Evolution animation complete");
             }
           }}
         />

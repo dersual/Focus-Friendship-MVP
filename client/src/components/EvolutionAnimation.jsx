@@ -56,35 +56,38 @@ const EvolutionAnimation = ({ pet, onComplete }) => {
   };
 
   return (
-    <div className="evolution-animation position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-         style={{
-           backgroundColor: "rgba(0, 0, 0, 0.8)",
-           zIndex: 9999,
-           color: "white"
-         }}>
+    <div
+      className="evolution-animation position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+      style={{
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        zIndex: 9999,
+        color: "white",
+      }}
+    >
       <div className="text-center">
-        
         {/* Evolution Stage Display */}
         <div className="mb-4">
-          <div 
+          <div
             className="evolution-pet-display mb-3"
             style={{
               fontSize: "8rem",
               transition: "all 0.5s ease-in-out",
-              ...getAnimationStyles()
+              ...getAnimationStyles(),
             }}
           >
             {currentEvolution.emoji}
           </div>
-          
+
           <div className="evolution-text">
             {stage === "start" && (
               <div>
                 <h3 className="text-primary fw-bold">Level Up!</h3>
-                <p className="text-light">{currentEvolution.name} is evolving...</p>
+                <p className="text-light">
+                  {currentEvolution.name} is evolving...
+                </p>
               </div>
             )}
-            
+
             {stage === "evolving" && (
               <div>
                 <h3 className="text-warning fw-bold">Evolution in Progress!</h3>
@@ -94,7 +97,7 @@ const EvolutionAnimation = ({ pet, onComplete }) => {
                 <p className="text-light">Something amazing is happening!</p>
               </div>
             )}
-            
+
             {stage === "complete" && nextEvolution && (
               <div>
                 <div className="mb-3" style={{ fontSize: "6rem" }}>
@@ -107,7 +110,7 @@ const EvolutionAnimation = ({ pet, onComplete }) => {
                 </p>
               </div>
             )}
-            
+
             {stage === "complete" && !nextEvolution && (
               <div>
                 <h3 className="text-success fw-bold">Level Up!</h3>
@@ -123,17 +126,20 @@ const EvolutionAnimation = ({ pet, onComplete }) => {
         {/* Progress Indicator */}
         <div className="evolution-progress">
           <div className="d-flex justify-content-center gap-3">
-            <div className={`evolution-dot ${stage === "start" ? "active" : stage !== "start" ? "complete" : ""}`}></div>
-            <div className={`evolution-dot ${stage === "evolving" ? "active" : stage === "complete" ? "complete" : ""}`}></div>
-            <div className={`evolution-dot ${stage === "complete" ? "active" : ""}`}></div>
+            <div
+              className={`evolution-dot ${stage === "start" ? "active" : stage !== "start" ? "complete" : ""}`}
+            ></div>
+            <div
+              className={`evolution-dot ${stage === "evolving" ? "active" : stage === "complete" ? "complete" : ""}`}
+            ></div>
+            <div
+              className={`evolution-dot ${stage === "complete" ? "active" : ""}`}
+            ></div>
           </div>
         </div>
 
         {stage === "complete" && (
-          <button 
-            className="btn btn-primary mt-4"
-            onClick={onComplete}
-          >
+          <button className="btn btn-primary mt-4" onClick={onComplete}>
             Continue
           </button>
         )}
@@ -147,21 +153,28 @@ const EvolutionAnimation = ({ pet, onComplete }) => {
           background-color: #6c757d;
           transition: all 0.3s ease;
         }
-        
+
         .evolution-dot.active {
           background-color: #0d6efd;
           box-shadow: 0 0 10px rgba(13, 110, 253, 0.5);
         }
-        
+
         .evolution-dot.complete {
           background-color: #198754;
         }
-        
+
         @keyframes sparkle {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.7; transform: scale(1.1); }
+          0%,
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.7;
+            transform: scale(1.1);
+          }
         }
-        
+
         .evolution-pet-display {
           animation: ${stage === "evolving" ? "sparkle 0.5s infinite" : "none"};
         }

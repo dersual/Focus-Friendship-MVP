@@ -41,7 +41,8 @@ const BEAN_SHOP = [
 ];
 
 const Shop = ({ showCloseButton = true }) => {
-  const { user, shop, pets, buyBean, selectBean, unlockPet, toggleShop } = useAppStore();
+  const { user, shop, pets, buyBean, selectBean, unlockPet, toggleShop } =
+    useAppStore();
 
   const handleBuyBean = (bean) => {
     const success = buyBean(bean.id, bean.cost);
@@ -55,7 +56,9 @@ const Shop = ({ showCloseButton = true }) => {
     if (success) {
       // Auto-select the newly unlocked companion
       const updatedPets = petService.getAllPets();
-      const companionKeys = Object.keys(updatedPets).filter(key => key.includes(companionType));
+      const companionKeys = Object.keys(updatedPets).filter((key) =>
+        key.includes(companionType),
+      );
       if (companionKeys.length > 0) {
         petService.setSelectedPetId(companionKeys[0]);
       }
@@ -68,8 +71,12 @@ const Shop = ({ showCloseButton = true }) => {
 
   // Get unlockable companions
   const unlockableCompanions = petService.getUnlockablePets(user.xp);
-  const affordableCompanions = unlockableCompanions.filter(pet => pet.canAfford);
-  const expensiveCompanions = unlockableCompanions.filter(pet => !pet.canAfford);
+  const affordableCompanions = unlockableCompanions.filter(
+    (pet) => pet.canAfford,
+  );
+  const expensiveCompanions = unlockableCompanions.filter(
+    (pet) => !pet.canAfford,
+  );
 
   return (
     <div className="shop-container">
@@ -179,7 +186,7 @@ const Shop = ({ showCloseButton = true }) => {
         <>
           <hr className="my-4" />
           <h3 className="h5 fw-bold mb-3">🐾 Companions</h3>
-          
+
           {/* Affordable Companions */}
           {affordableCompanions.length > 0 && (
             <div className="mb-4">
@@ -187,14 +194,11 @@ const Shop = ({ showCloseButton = true }) => {
                 <i className="fas fa-coins me-1"></i>
                 Ready to Unlock ({affordableCompanions.length})
               </h6>
-              
+
               <div className="row g-3">
                 {affordableCompanions.map((companion) => (
                   <div key={companion.id} className="col-12 col-sm-6">
-                    <Card
-                      padding="sm"
-                      className="shop-item border-success"
-                    >
+                    <Card padding="sm" className="shop-item border-success">
                       <div className="text-center">
                         <div
                           className="companion-preview mb-2"
@@ -203,17 +207,23 @@ const Shop = ({ showCloseButton = true }) => {
                           {companion.emoji}
                         </div>
 
-                        <h5 className="fw-bold mb-1 text-success">{companion.name}</h5>
-                        <p className="small text-muted mb-2">{companion.description}</p>
+                        <h5 className="fw-bold mb-1 text-success">
+                          {companion.name}
+                        </h5>
+                        <p className="small text-muted mb-2">
+                          {companion.description}
+                        </p>
 
                         <div className="specialty mb-2">
                           <span className="badge bg-primary">
                             {companion.specialty}
-                            {companion.xpBonus && companion.specialty !== 'general' && (
-                              <span className="ms-1">
-                                +{Math.round((companion.xpBonus - 1) * 100)}% XP
-                              </span>
-                            )}
+                            {companion.xpBonus &&
+                              companion.specialty !== "general" && (
+                                <span className="ms-1">
+                                  +{Math.round((companion.xpBonus - 1) * 100)}%
+                                  XP
+                                </span>
+                              )}
                           </span>
                         </div>
 
@@ -246,7 +256,7 @@ const Shop = ({ showCloseButton = true }) => {
                 <i className="fas fa-star me-1"></i>
                 Coming Soon ({expensiveCompanions.length})
               </h6>
-              
+
               <div className="row g-3">
                 {expensiveCompanions.map((companion) => {
                   const xpNeeded = companion.unlockCost - user.xp;
@@ -259,25 +269,31 @@ const Shop = ({ showCloseButton = true }) => {
                         <div className="text-center">
                           <div
                             className="companion-preview mb-2"
-                            style={{ 
+                            style={{
                               fontSize: "3rem",
-                              filter: "grayscale(100%)"
+                              filter: "grayscale(100%)",
                             }}
                           >
                             {companion.emoji}
                           </div>
 
-                          <h5 className="fw-bold mb-1 text-muted">{companion.name}</h5>
-                          <p className="small text-muted mb-2">{companion.description}</p>
+                          <h5 className="fw-bold mb-1 text-muted">
+                            {companion.name}
+                          </h5>
+                          <p className="small text-muted mb-2">
+                            {companion.description}
+                          </p>
 
                           <div className="specialty mb-2">
                             <span className="badge bg-secondary">
                               {companion.specialty}
-                              {companion.xpBonus && companion.specialty !== 'general' && (
-                                <span className="ms-1">
-                                  +{Math.round((companion.xpBonus - 1) * 100)}% XP
-                                </span>
-                              )}
+                              {companion.xpBonus &&
+                                companion.specialty !== "general" && (
+                                  <span className="ms-1">
+                                    +{Math.round((companion.xpBonus - 1) * 100)}
+                                    % XP
+                                  </span>
+                                )}
                             </span>
                           </div>
 

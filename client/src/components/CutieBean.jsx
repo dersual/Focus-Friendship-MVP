@@ -22,13 +22,17 @@ const beanImages = [Bean0, Bean1, Bean2, Bean3];
 
 const CutieBean = () => {
   const { user, shop, pets, selectedPet, selectPet } = useAppStore();
-  const [displayLevel, setDisplayLevel] = useState(selectedPet?.level || user.level);
+  const [displayLevel, setDisplayLevel] = useState(
+    selectedPet?.level || user.level,
+  );
   const [isLevelingUp, setIsLevelingUp] = useState(false);
   const [showEvolutionPopup, setShowEvolutionPopup] = useState(false);
 
   // Get list of unlocked companions
   const companionList = Object.values(pets);
-  const currentCompanionIndex = companionList.findIndex(pet => pet.id === selectedPet?.id);
+  const currentCompanionIndex = companionList.findIndex(
+    (pet) => pet.id === selectedPet?.id,
+  );
 
   useEffect(() => {
     const currentLevel = selectedPet?.level || user.level;
@@ -69,7 +73,7 @@ const CutieBean = () => {
   // Get current bean display info
   const getCurrentBeanInfo = () => {
     const shopBeanEmoji = getDisplayBean();
-    
+
     if (shopBeanEmoji) {
       // Show shop bean
       return {
@@ -78,31 +82,31 @@ const CutieBean = () => {
         level: user.level,
         xp: user.xp,
         specialty: "general",
-        isShopBean: true
+        isShopBean: true,
       };
     }
-    
+
     if (selectedPet) {
       const petConfig = petService.PET_TYPES[selectedPet.type];
       const currentImage = getBeanImage(selectedPet.level);
-      
+
       return {
         image: currentImage,
         name: petConfig?.name || "Bean Companion",
         level: selectedPet.level,
         xp: selectedPet.xp,
         specialty: petConfig?.specialty || "general",
-        isShopBean: false
+        isShopBean: false,
       };
     }
-    
+
     return {
       image: getBeanImage(user.level),
       name: "Bean Buddy",
       level: user.level,
       xp: user.xp,
       specialty: "general",
-      isShopBean: false
+      isShopBean: false,
     };
   };
 
@@ -111,14 +115,20 @@ const CutieBean = () => {
   // Carousel navigation functions
   const handlePrevious = () => {
     if (companionList.length > 1) {
-      const prevIndex = currentCompanionIndex <= 0 ? companionList.length - 1 : currentCompanionIndex - 1;
+      const prevIndex =
+        currentCompanionIndex <= 0
+          ? companionList.length - 1
+          : currentCompanionIndex - 1;
       selectPet(companionList[prevIndex].id);
     }
   };
 
   const handleNext = () => {
     if (companionList.length > 1) {
-      const nextIndex = currentCompanionIndex >= companionList.length - 1 ? 0 : currentCompanionIndex + 1;
+      const nextIndex =
+        currentCompanionIndex >= companionList.length - 1
+          ? 0
+          : currentCompanionIndex + 1;
       selectPet(companionList[nextIndex].id);
     }
   };
@@ -175,7 +185,7 @@ const CutieBean = () => {
               height: "auto",
               transition: "transform 300ms ease-in-out",
               filter: "drop-shadow(0 4px 12px rgba(90, 182, 189, 0.3))",
-              cursor: "pointer"
+              cursor: "pointer",
             }}
             onClick={() => setShowEvolutionPopup(true)}
           />
@@ -185,22 +195,20 @@ const CutieBean = () => {
       {/* Bean Info */}
       <div className="bean-info mb-3">
         <div className="text-center">
-          <div className="fw-bold text-primary h5 mb-1">
-            {beanInfo.name}
-          </div>
+          <div className="fw-bold text-primary h5 mb-1">{beanInfo.name}</div>
           <div className="small text-muted">
             Level {beanInfo.level} • {beanInfo.xp} XP
           </div>
-          {beanInfo.specialty !== 'general' && (
+          {beanInfo.specialty !== "general" && (
             <div className="small text-success">
               <strong>Specialty:</strong> {beanInfo.specialty}
             </div>
           )}
         </div>
-        
+
         {/* Evolution Button - Make it obvious */}
         <div className="text-center mt-2">
-          <button 
+          <button
             className="btn btn-outline-primary btn-sm"
             onClick={() => setShowEvolutionPopup(true)}
           >
@@ -215,7 +223,7 @@ const CutieBean = () => {
           <div className="col-4">
             <div className="stat-item">
               <div className="stat-label small fw-semibold text-secondary mb-1">
-                {selectedPet ? 'Pet Level' : 'Level'}
+                {selectedPet ? "Pet Level" : "Level"}
               </div>
               <div className="stat-value h4 fw-bold text-primary mb-0">
                 {beanInfo.level}
@@ -257,50 +265,78 @@ const CutieBean = () => {
 
       {/* Evolution Popup Modal */}
       {showEvolutionPopup && (
-        <div 
+        <div
           className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
           style={{
             backgroundColor: "rgba(0, 0, 0, 0.7)",
-            zIndex: 9999
+            zIndex: 9999,
           }}
           onClick={() => setShowEvolutionPopup(false)}
         >
-          <div 
+          <div
             className="bg-white rounded p-4 mx-3"
             style={{ maxWidth: "400px", width: "100%" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center">
               <h5 className="fw-bold mb-3">Bean Evolution</h5>
-              
+
               <div className="evolution-stages">
                 <div className="row g-2">
                   <div className="col-3 text-center">
-                    <img src={beanImages[0]} alt="Stage 1" className="img-fluid mb-1" style={{ maxHeight: "60px" }} />
+                    <img
+                      src={beanImages[0]}
+                      alt="Stage 1"
+                      className="img-fluid mb-1"
+                      style={{ maxHeight: "60px" }}
+                    />
                     <div className="small">Lv 1-5</div>
-                    <div className={`small ${beanInfo.level >= 1 ? 'text-success' : 'text-muted'}`}>
-                      {beanInfo.level >= 1 ? '✓' : '○'}
+                    <div
+                      className={`small ${beanInfo.level >= 1 ? "text-success" : "text-muted"}`}
+                    >
+                      {beanInfo.level >= 1 ? "✓" : "○"}
                     </div>
                   </div>
                   <div className="col-3 text-center">
-                    <img src={beanImages[1]} alt="Stage 2" className="img-fluid mb-1" style={{ maxHeight: "60px" }} />
+                    <img
+                      src={beanImages[1]}
+                      alt="Stage 2"
+                      className="img-fluid mb-1"
+                      style={{ maxHeight: "60px" }}
+                    />
                     <div className="small">Lv 6-10</div>
-                    <div className={`small ${beanInfo.level >= 6 ? 'text-success' : 'text-muted'}`}>
-                      {beanInfo.level >= 6 ? '✓' : '○'}
+                    <div
+                      className={`small ${beanInfo.level >= 6 ? "text-success" : "text-muted"}`}
+                    >
+                      {beanInfo.level >= 6 ? "✓" : "○"}
                     </div>
                   </div>
                   <div className="col-3 text-center">
-                    <img src={beanImages[2]} alt="Stage 3" className="img-fluid mb-1" style={{ maxHeight: "60px" }} />
+                    <img
+                      src={beanImages[2]}
+                      alt="Stage 3"
+                      className="img-fluid mb-1"
+                      style={{ maxHeight: "60px" }}
+                    />
                     <div className="small">Lv 11-15</div>
-                    <div className={`small ${beanInfo.level >= 11 ? 'text-success' : 'text-muted'}`}>
-                      {beanInfo.level >= 11 ? '✓' : '○'}
+                    <div
+                      className={`small ${beanInfo.level >= 11 ? "text-success" : "text-muted"}`}
+                    >
+                      {beanInfo.level >= 11 ? "✓" : "○"}
                     </div>
                   </div>
                   <div className="col-3 text-center">
-                    <img src={beanImages[3]} alt="Stage 4" className="img-fluid mb-1" style={{ maxHeight: "60px" }} />
+                    <img
+                      src={beanImages[3]}
+                      alt="Stage 4"
+                      className="img-fluid mb-1"
+                      style={{ maxHeight: "60px" }}
+                    />
                     <div className="small">Lv 16+</div>
-                    <div className={`small ${beanInfo.level >= 16 ? 'text-success' : 'text-muted'}`}>
-                      {beanInfo.level >= 16 ? '✓' : '○'}
+                    <div
+                      className={`small ${beanInfo.level >= 16 ? "text-success" : "text-muted"}`}
+                    >
+                      {beanInfo.level >= 16 ? "✓" : "○"}
                     </div>
                   </div>
                 </div>
@@ -308,16 +344,17 @@ const CutieBean = () => {
 
               <div className="mt-3">
                 <div className="small text-muted">
-                  Current: <strong>{beanInfo.name}</strong> • Level {beanInfo.level}
+                  Current: <strong>{beanInfo.name}</strong> • Level{" "}
+                  {beanInfo.level}
                 </div>
-                {beanInfo.specialty !== 'general' && (
+                {beanInfo.specialty !== "general" && (
                   <div className="small text-primary">
                     <strong>Specialty:</strong> {beanInfo.specialty}
                   </div>
                 )}
               </div>
 
-              <button 
+              <button
                 className="btn btn-primary btn-sm mt-3"
                 onClick={() => setShowEvolutionPopup(false)}
               >

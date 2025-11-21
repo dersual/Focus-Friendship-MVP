@@ -49,10 +49,10 @@ const useAppStore = create((set, get) => ({
   initializeApp: () => {
     initializeUserState();
     set({ user: getUserState() });
-    
+
     // Initialize pets
     get().refreshPets();
-    
+
     // Set default pet if none selected
     const selectedPetId = petService.getSelectedPetId();
     const pets = petService.getAllPets();
@@ -61,9 +61,9 @@ const useAppStore = create((set, get) => ({
     } else {
       // Create and select default pet if none exists
       const defaultPet = petService.createDefaultPet();
-      set({ 
+      set({
         pets: { [defaultPet.id]: defaultPet },
-        selectedPet: defaultPet 
+        selectedPet: defaultPet,
       });
     }
   },
@@ -214,7 +214,7 @@ const useAppStore = create((set, get) => ({
   // Pet actions
   selectPet: (petId) => {
     petService.setSelectedPetId(petId);
-    set({ 
+    set({
       selectedPet: petService.getSelectedPet(),
     });
   },
@@ -222,7 +222,7 @@ const useAppStore = create((set, get) => ({
   addXPToPet: (petId, xpAmount) => {
     const result = petService.addXPToPet(petId, xpAmount);
     if (result) {
-      set({ 
+      set({
         pets: petService.getAllPets(),
         selectedPet: petService.getSelectedPet(),
       });
@@ -234,17 +234,17 @@ const useAppStore = create((set, get) => ({
   unlockPet: (petType, cost) => {
     const state = get();
     const petConfig = petService.PET_TYPES[petType];
-    
+
     if (!petConfig) return false;
-    
+
     if (state.user.xp >= cost) {
       // Deduct XP
       const { newState } = get().addXP(-cost);
-      
+
       // Unlock pet
       const success = petService.unlockPet(petType, cost);
       if (success) {
-        set({ 
+        set({
           pets: petService.getAllPets(),
           user: newState,
         });
@@ -255,7 +255,7 @@ const useAppStore = create((set, get) => ({
   },
 
   refreshPets: () => {
-    set({ 
+    set({
       pets: petService.getAllPets(),
       selectedPet: petService.getSelectedPet(),
     });
