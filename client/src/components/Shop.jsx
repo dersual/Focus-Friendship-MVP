@@ -3,6 +3,7 @@ import React from "react";
 import { Button, Card } from "./ui";
 import useAppStore from "../stores/appStore";
 import * as petService from "../services/petService";
+import { TRAITS } from "../config/traits";
 
 // Bean shop data
 const BEAN_SHOP = [
@@ -41,8 +42,16 @@ const BEAN_SHOP = [
 ];
 
 const Shop = ({ showCloseButton = true }) => {
-  const { user, shop, pets, buyBean, selectBean, unlockPet, toggleShop } =
-    useAppStore();
+  const {
+    user,
+    shop,
+    buyBean,
+    selectBean,
+    buyTrait,
+    equipTrait,
+    unequipTrait,
+    toggleShop,
+  } = useAppStore();
 
   const handleBuyBean = (bean) => {
     const success = buyBean(bean.id, bean.cost);
@@ -51,32 +60,30 @@ const Shop = ({ showCloseButton = true }) => {
     }
   };
 
-  const handleUnlockCompanion = (companionType) => {
-    const success = unlockPet(companionType);
+  const handleBuyTrait = (trait) => {
+    const success = buyTrait(trait.id, trait.cost);
     if (success) {
-      // Auto-select the newly unlocked companion
-      const updatedPets = petService.getAllPets();
-      const companionKeys = Object.keys(updatedPets).filter((key) =>
-        key.includes(companionType),
-      );
-      if (companionKeys.length > 0) {
-        petService.setSelectedPetId(companionKeys[0]);
-      }
+      console.log(`Successfully purchased trait: ${trait.name}`);
     }
+    return success;
+  };
+
+  const handleEquipTrait = (traitId, beanId = null) => {
+    // If no specific bean provided, equip to currently selected bean
+    const targetBean = beanId || shop.selectedBean;
+    const success = equipTrait(targetBean, traitId);
+    if (success) {
+      console.log(`Equipped trait ${traitId} to bean ${targetBean}`);
+    }
+    return success;
   };
 
   const canAffordBean = (cost) => user.xp >= cost;
+  const canAffordTrait = (cost) => user.xp >= cost;
   const meetsLevelRequirement = (level) => user.level >= level;
   const alreadyOwned = (beanId) => shop.ownedBeans.includes(beanId);
-
-  // Get unlockable companions
-  const unlockableCompanions = petService.getUnlockablePets(user.xp);
-  const affordableCompanions = unlockableCompanions.filter(
-    (pet) => pet.canAfford,
-  );
-  const expensiveCompanions = unlockableCompanions.filter(
-    (pet) => !pet.canAfford,
-  );
+  const ownsTrait = (traitId) => shop.ownedTraits.includes(traitId);
+  const getBeanEquippedTrait = (beanId) => shop.beanTraits[beanId]?.[0] || null;
 
   return (
     <div className="shop-container">
@@ -97,6 +104,9 @@ const Shop = ({ showCloseButton = true }) => {
           )}
         </div>
       </div>
+
+      {/* Bean Section */}
+      <h3 className="h5 fw-bold mb-3">🫘 Beans</h3>
 
       <div className="row g-3">
         {BEAN_SHOP.map((bean) => {
@@ -175,156 +185,118 @@ const Shop = ({ showCloseButton = true }) => {
         })}
       </div>
 
-      <div className="text-center mt-4">
+      <div className="text-center mt-4 mb-4">
         <p className="small text-muted">
           Complete focus sessions to earn XP and level up to unlock new beans!
         </p>
       </div>
 
-      {/* Companions Section */}
-      {(affordableCompanions.length > 0 || expensiveCompanions.length > 0) && (
-        <>
-          <hr className="my-4" />
-          <h3 className="h5 fw-bold mb-3">🐾 Companions</h3>
+      {/* Bean Traits/Upgrades Section */}
+      <hr className="my-4" />
+      <h3 className="h5 fw-bold mb-3">✨ Bean Traits & Upgrades</h3>
+      <p className="small text-muted mb-3">
+        Enhance your beans with special traits to boost your XP earnings!
+      </p>
 
-          {/* Affordable Companions */}
-          {affordableCompanions.length > 0 && (
-            <div className="mb-4">
-              <h6 className="text-success mb-3">
-                <i className="fas fa-coins me-1"></i>
-                Ready to Unlock ({affordableCompanions.length})
-              </h6>
+      <div className="row g-3">
+        {Object.values(TRAITS).map((trait) => {
+          const affordable = canAffordTrait(trait.cost);
+          const levelOk = meetsLevelRequirement(trait.unlockLevel);
+          const owned = ownsTrait(trait.id);
+          const canPurchase = affordable && levelOk && !owned;
+          const currentBeanTrait = getBeanEquippedTrait(shop.selectedBean);
+          const isEquipped = currentBeanTrait === trait.id;
 
-              <div className="row g-3">
-                {affordableCompanions.map((companion) => (
-                  <div key={companion.id} className="col-12 col-sm-6">
-                    <Card padding="sm" className="shop-item border-success">
-                      <div className="text-center">
-                        <div
-                          className="companion-preview mb-2"
-                          style={{ fontSize: "3rem" }}
-                        >
-                          {companion.emoji}
-                        </div>
-
-                        <h5 className="fw-bold mb-1 text-success">
-                          {companion.name}
-                        </h5>
-                        <p className="small text-muted mb-2">
-                          {companion.description}
-                        </p>
-
-                        <div className="specialty mb-2">
-                          <span className="badge bg-primary">
-                            {companion.specialty}
-                            {companion.xpBonus &&
-                              companion.specialty !== "general" && (
-                                <span className="ms-1">
-                                  +{Math.round((companion.xpBonus - 1) * 100)}%
-                                  XP
-                                </span>
-                              )}
-                          </span>
-                        </div>
-
-                        <div className="price mb-3">
-                          <span className="badge bg-success">
-                            {companion.unlockCost} XP
-                          </span>
-                        </div>
-
-                        <Button
-                          size="sm"
-                          variant="success"
-                          onClick={() => handleUnlockCompanion(companion.id)}
-                          className="px-3"
-                        >
-                          🔓 Unlock Companion
-                        </Button>
-                      </div>
-                    </Card>
+          return (
+            <div key={trait.id} className="col-12 col-sm-6">
+              <Card
+                padding="sm"
+                className={`shop-item ${owned ? "border-info" : ""} ${!levelOk ? "opacity-50" : ""} ${isEquipped ? "border-success bg-success bg-opacity-10" : ""}`}
+              >
+                <div className="text-center">
+                  <div
+                    className="trait-preview mb-2"
+                    style={{ fontSize: "2.5rem" }}
+                  >
+                    {trait.emoji}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* Coming Soon Companions */}
-          {expensiveCompanions.length > 0 && (
-            <div className="mb-4">
-              <h6 className="text-warning mb-3">
-                <i className="fas fa-star me-1"></i>
-                Coming Soon ({expensiveCompanions.length})
-              </h6>
+                  <h5 className="fw-bold mb-1">{trait.name}</h5>
+                  <p className="small text-muted mb-2">{trait.description}</p>
 
-              <div className="row g-3">
-                {expensiveCompanions.map((companion) => {
-                  const xpNeeded = companion.unlockCost - user.xp;
-                  return (
-                    <div key={companion.id} className="col-12 col-sm-6">
-                      <Card
-                        padding="sm"
-                        className="shop-item border-warning opacity-75"
+                  <div className="specialty mb-2">
+                    <span className="badge bg-info">
+                      {trait.type === "global" ? "All Tasks" : trait.type}
+                    </span>
+                    <span className="badge bg-success ms-1">
+                      +{Math.round((trait.multiplier - 1) * 100)}% XP
+                    </span>
+                  </div>
+
+                  <div className="requirements mb-3">
+                    <div className="d-flex gap-1 justify-content-center">
+                      <span
+                        className={`badge ${levelOk ? "bg-success" : "bg-secondary"}`}
                       >
-                        <div className="text-center">
-                          <div
-                            className="companion-preview mb-2"
-                            style={{
-                              fontSize: "3rem",
-                              filter: "grayscale(100%)",
-                            }}
-                          >
-                            {companion.emoji}
-                          </div>
-
-                          <h5 className="fw-bold mb-1 text-muted">
-                            {companion.name}
-                          </h5>
-                          <p className="small text-muted mb-2">
-                            {companion.description}
-                          </p>
-
-                          <div className="specialty mb-2">
-                            <span className="badge bg-secondary">
-                              {companion.specialty}
-                              {companion.xpBonus &&
-                                companion.specialty !== "general" && (
-                                  <span className="ms-1">
-                                    +{Math.round((companion.xpBonus - 1) * 100)}
-                                    % XP
-                                  </span>
-                                )}
-                            </span>
-                          </div>
-
-                          <div className="price mb-2">
-                            <span className="badge bg-warning">
-                              {companion.unlockCost} XP
-                            </span>
-                          </div>
-
-                          <div className="small text-danger mb-2">
-                            Need {xpNeeded} more XP
-                          </div>
-
-                          <Button
-                            size="sm"
-                            variant="outline-warning"
-                            disabled
-                            className="px-3"
-                          >
-                            🔒 Locked
-                          </Button>
-                        </div>
-                      </Card>
+                        Level {trait.unlockLevel}
+                      </span>
+                      <span
+                        className={`badge ${affordable || owned ? "bg-primary" : "bg-warning"}`}
+                      >
+                        {trait.cost} XP
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+
+                  {isEquipped ? (
+                    <div className="d-flex flex-column gap-2">
+                      <span className="badge bg-success">✅ Equipped</span>
+                      <Button
+                        size="sm"
+                        variant="outline-danger"
+                        onClick={() => unequipTrait(shop.selectedBean)}
+                        className="px-3"
+                      >
+                        Unequip
+                      </Button>
+                    </div>
+                  ) : owned ? (
+                    <Button
+                      size="sm"
+                      variant="success"
+                      onClick={() => handleEquipTrait(trait.id)}
+                      className="px-3"
+                      disabled={currentBeanTrait !== null} // One trait per bean
+                    >
+                      {currentBeanTrait ? "Bean Full" : "Equip"}
+                    </Button>
+                  ) : !levelOk ? (
+                    <span className="badge bg-secondary">
+                      🔒 Level {trait.unlockLevel} Required
+                    </span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      disabled={!canPurchase}
+                      onClick={() => handleBuyTrait(trait)}
+                      className="px-3"
+                    >
+                      {affordable ? "💫 Unlock Trait" : "💸 Too Expensive"}
+                    </Button>
+                  )}
+                </div>
+              </Card>
             </div>
-          )}
-        </>
-      )}
+          );
+        })}
+      </div>
+
+      <div className="text-center mt-4">
+        <p className="small text-muted">
+          Traits can be applied to any of your beans to enhance their abilities!
+        </p>
+      </div>
     </div>
   );
 };

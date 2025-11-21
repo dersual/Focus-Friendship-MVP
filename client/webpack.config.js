@@ -1,8 +1,9 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const Dotenv = require('dotenv-webpack');
 
 module.exports = {
-  mode: "development",
+  mode: "production",
   entry: "./src/index.js",
   output: {
     path: path.resolve(__dirname, "dist"),
@@ -36,6 +37,7 @@ module.exports = {
       template: "./public/index.html",
       filename: "./index.html",
     }),
+    new Dotenv(),
   ],
   devServer: {
     static: {

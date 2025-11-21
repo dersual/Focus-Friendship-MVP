@@ -1,18 +1,15 @@
 // client/src/stores/appStore.js
 import { create } from "zustand";
-import {
-  getUserState,
-  initializeUserState,
-  addXP as addXPService,
-  applyPenalty as applyPenaltyService,
-} from "../services/xpService";
+import { auth, onAuthStateChanged, signIn, db } from "../firebase"; // Added db
+import * as xpService from "../services/xpService";
 import * as goalService from "../services/goalService";
 import * as petService from "../services/petService";
-import { enqueueForSync } from "../services/syncService";
+import * as shopService from "../services/shopService";
+
 
 const useAppStore = create((set, get) => ({
   // User state
-  user: getUserState(),
+  user: {},
 
   // Timer state
   timer: {
@@ -26,17 +23,19 @@ const useAppStore = create((set, get) => ({
   },
 
   // Goals state
-  goals: goalService.getActiveGoals(),
+  goals: [],
 
   // Pet state
-  pets: petService.getAllPets(),
-  selectedPet: petService.getSelectedPet(),
+  pets: {},
+  selectedPet: null,
 
   // Shop state
   shop: {
     isOpen: false,
     ownedBeans: ["bean-0"], // legacy - kept for compatibility
     selectedBean: "bean-0", // legacy - kept for compatibility
+    ownedTraits: [], // Array of owned trait IDs
+    beanTraits: {}, // Object mapping bean IDs to equipped trait IDs: { "bean-1": ["focus-boost"], "bean-2": [] }
   },
 
   // UI state
@@ -47,30 +46,59 @@ const useAppStore = create((set, get) => ({
 
   // Actions
   initializeApp: () => {
-    initializeUserState();
-    set({ user: getUserState() });
+    // Firebase Authentication
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const uid = user.uid;
+        // User is signed in.
+        console.log("Firebase User UID:", uid);
 
-    // Initialize pets
-    get().refreshPets();
+        // Load user state from Firestore using xpService
+        const userState = await xpService.getUserState(uid);
+        set((state) => ({ user: { uid, ...userState } }));
 
-    // Set default pet if none selected
-    const selectedPetId = petService.getSelectedPetId();
-    const pets = petService.getAllPets();
-    if (pets[selectedPetId]) {
-      set({ selectedPet: pets[selectedPetId] });
-    } else {
-      // Create and select default pet if none exists
-      const defaultPet = petService.createDefaultPet();
-      set({
-        pets: { [defaultPet.id]: defaultPet },
-        selectedPet: defaultPet,
-      });
-    }
+        // Load pets from Firestore
+        await get().refreshPets(); // Calls refreshPets with the now available UID
+
+        // Load goals from Firestore
+        await get().refreshGoals(); // Calls refreshGoals with the now available UID
+
+        // Load shop state from Firestore
+        await get().refreshShop(); // Calls refreshShop with the now available UID
+      } else {
+        // No user is signed in, sign in anonymously.
+        console.log("No Firebase user found, signing in anonymously...");
+        try {
+          const uid = await signIn();
+          console.log("Anonymous sign-in successful. UID:", uid);
+
+          // After anonymous sign-in, initialize user state and pets
+          const userState = await xpService.getUserState(uid); // Will create if not exists
+          set((state) => ({ user: { uid, ...userState } }));
+
+          await get().refreshPets(); // Calls refreshPets with the now available UID
+
+          // Load goals from Firestore for new user
+          await get().refreshGoals(); // Calls refreshGoals with the now available UID
+
+          // Initialize shop state for new user in Firestore
+          await get().refreshShop(); // Calls refreshShop with the now available UID
+        } catch (error) {
+          console.error("Anonymous sign-in failed during app initialization:", error);
+        }
+      }
+    });
+
   },
 
   // User actions
-  addXP: (amount, options = {}) => {
-    const { newState, levelUp } = addXPService(amount);
+  addXP: async (amount, options = {}) => { // Make async
+    const uid = get().user.uid;
+    if (!uid) {
+      console.error("UID not found for addXP action.");
+      return { newState: get().user, levelUp: false };
+    }
+    const { newState, levelUp } = await xpService.addXP(uid, amount); // Pass uid
     set({ user: newState });
 
     if (levelUp && options.onLevelUp) {
@@ -80,8 +108,13 @@ const useAppStore = create((set, get) => ({
     return { newState, levelUp };
   },
 
-  applyPenalty: (penaltyData) => {
-    const { newState } = applyPenaltyService(penaltyData);
+  applyPenalty: async (penaltyData) => { // Make async
+    const uid = get().user.uid;
+    if (!uid) {
+      console.error("UID not found for applyPenalty action.");
+      return get().user;
+    }
+    const { newState } = await xpService.applyPenalty(uid, penaltyData); // Pass uid
     set({ user: newState });
     return newState;
   },
@@ -157,40 +190,44 @@ const useAppStore = create((set, get) => ({
     }));
   },
 
-  completeTimer: () => {
+  completeTimer: async () => {
     const state = get();
     const { timer, user } = state;
+    const uid = user.uid;
+
+    if (!uid) {
+      console.error("UID not found for completeTimer action.");
+      return;
+    }
 
     if (!timer.isBreakTime) {
-      // Work session completed
-      const xpGained = timer.workDuration * 10;
-      const { newState, levelUp } = get().addXP(xpGained);
-
-      // Update goal progress
-      if (timer.selectedGoal) {
-        const newGoals = goalService.completePomodoroForGoal(
-          parseInt(timer.selectedGoal, 10),
-        );
-        set({
-          goals: newGoals.filter((g) => g.completedPomodoros < g.pomodoros),
-        });
-      }
-
-      // Log session
-      enqueueForSync("session", {
-        sessionId: Date.now(),
+      // Work session completed - record it in Firestore
+      const sessionData = {
+        durationMinutes: timer.workDuration,
+        completed: true,
+        isBreak: false,
+        goalId: timer.selectedGoal || null,
         startAt: new Date(
           Date.now() - timer.workDuration * 60 * 1000,
         ).toISOString(),
         endAt: new Date().toISOString(),
-        durationSec: timer.workDuration * 60,
-        completed: true,
-        xpGained,
-        interrupted: false,
-        penaltyApplied: false,
-        goalId: timer.selectedGoal,
-      });
-      enqueueForSync("user", newState);
+        taskCompleted: true, // Assuming tasks are always completed if session is completed
+        createdAt: new Date().toISOString(), // Use client-side timestamp
+      };
+
+      // Write session data to Firestore to trigger Cloud Function
+      await db.collection("users").doc(uid).collection("sessions").add(sessionData);
+
+      // Update goal progress (client-side update, will be consistent with Firestore)
+      if (timer.selectedGoal) {
+        const updatedGoals = await goalService.completePomodoroForGoal(
+          uid,
+          timer.selectedGoal,
+        );
+        set({
+          goals: updatedGoals.filter((g) => g.completedPomodoros < g.pomodoros),
+        });
+      }
     }
 
     // Reset timer
@@ -198,13 +235,25 @@ const useAppStore = create((set, get) => ({
   },
 
   // Goal actions
-  refreshGoals: () => {
-    set({ goals: goalService.getActiveGoals() });
+  refreshGoals: async () => {
+    const uid = get().user.uid;
+    if (!uid) {
+      console.error("UID not found for refreshGoals action.");
+      return;
+    }
+    const goals = await goalService.getActiveGoals(uid);
+    set({ goals: goals });
   },
 
-  completePomodoroForGoal: (goalId) => {
-    const updatedGoals = goalService.completePomodoroForGoal(
-      parseInt(goalId, 10),
+  completePomodoroForGoal: async (goalId) => {
+    const uid = get().user.uid;
+    if (!uid) {
+      console.error("UID not found for completePomodoroForGoal action.");
+      return;
+    }
+    const updatedGoals = await goalService.completePomodoroForGoal(
+      uid,
+      goalId, // goalService now takes string ID
     );
     set({
       goals: updatedGoals.filter((g) => g.completedPomodoros < g.pomodoros),
@@ -212,41 +261,63 @@ const useAppStore = create((set, get) => ({
   },
 
   // Pet actions
-  selectPet: (petId) => {
-    petService.setSelectedPetId(petId);
+  selectPet: async (petId) => {
+    const uid = get().user.uid;
+    if (!uid) {
+      console.error("UID not found for selectPet action.");
+      return;
+    }
+    await petService.setSelectedPetId(uid, petId);
+    const selectedPet = await petService.getSelectedPet(uid); // Re-fetch selected pet to ensure state is accurate
     set({
-      selectedPet: petService.getSelectedPet(),
+      selectedPet: selectedPet,
     });
   },
 
-  addXPToPet: (petId, xpAmount) => {
-    const result = petService.addXPToPet(petId, xpAmount);
+  addXPToPet: async (petId, xpAmount) => {
+    const uid = get().user.uid;
+    if (!uid) {
+      console.error("UID not found for addXPToPet action.");
+      return null;
+    }
+    const result = await petService.addXPToPet(uid, petId, xpAmount);
     if (result) {
+      // Refresh pets and selectedPet after XP addition
+      const pets = await petService.getAllPets(uid);
+      const selectedPet = await petService.getSelectedPet(uid);
       set({
-        pets: petService.getAllPets(),
-        selectedPet: petService.getSelectedPet(),
+        pets: pets,
+        selectedPet: selectedPet,
       });
       return result;
     }
     return null;
   },
 
-  unlockPet: (petType, cost) => {
+  unlockPet: async (petType, cost) => {
     const state = get();
+    const uid = state.user.uid;
+    if (!uid) {
+      console.error("UID not found for unlockPet action.");
+      return false;
+    }
     const petConfig = petService.PET_TYPES[petType];
 
     if (!petConfig) return false;
 
+    // Fetch user's current XP from the store (which should be updated from Firestore)
     if (state.user.xp >= cost) {
       // Deduct XP
-      const { newState } = get().addXP(-cost);
+      const { newState } = await get().addXP(-cost); // addXP is now async
 
       // Unlock pet
-      const success = petService.unlockPet(petType, cost);
+      const success = await petService.unlockPet(uid, petType); // petService.unlockPet is now async
       if (success) {
+        // Refresh pets after unlocking
+        const pets = await petService.getAllPets(uid);
         set({
-          pets: petService.getAllPets(),
-          user: newState,
+          pets: pets,
+          user: newState, // Update user state with new XP
         });
       }
       return success;
@@ -254,11 +325,28 @@ const useAppStore = create((set, get) => ({
     return false;
   },
 
-  refreshPets: () => {
+  refreshPets: async () => {
+    const uid = get().user.uid;
+    if (!uid) {
+      console.error("UID not found for refreshPets action.");
+      return;
+    }
+    const pets = await petService.getAllPets(uid);
+    const selectedPet = await petService.getSelectedPet(uid);
     set({
-      pets: petService.getAllPets(),
-      selectedPet: petService.getSelectedPet(),
+      pets: pets,
+      selectedPet: selectedPet,
     });
+  },
+
+  refreshShop: async () => {
+    const uid = get().user.uid;
+    if (!uid) {
+      console.error("UID not found for refreshShop action.");
+      return;
+    }
+    const shopData = await shopService.getShopData(uid);
+    set({ shop: shopData });
   },
 
   // Shop actions
@@ -268,27 +356,98 @@ const useAppStore = create((set, get) => ({
     }));
   },
 
-  buyBean: (beanId, cost) => {
+  buyBean: async (beanId, cost) => {
     const state = get();
+    const uid = state.user.uid;
+    if (!uid) {
+      console.error("UID not found for buyBean action.");
+      return false;
+    }
+
     if (state.user.xp >= cost && !state.shop.ownedBeans.includes(beanId)) {
       // Deduct XP
-      const newXP = state.user.xp - cost;
-      set((state) => ({
-        user: { ...state.user, xp: newXP },
-        shop: {
-          ...state.shop,
-          ownedBeans: [...state.shop.ownedBeans, beanId],
-        },
-      }));
-      return true;
+      const { newState: userNewState } = await get().addXP(-cost);
+
+      // Buy bean via service
+      const success = await shopService.buyBean(uid, beanId);
+      if (success) {
+        // Refresh shop state
+        await get().refreshShop();
+        set({ user: userNewState }); // Update user state with new XP
+      }
+      return success;
     }
     return false;
   },
 
-  selectBean: (beanId) => {
-    set((state) => ({
-      shop: { ...state.shop, selectedBean: beanId },
-    }));
+  selectBean: async (beanId) => {
+    const uid = get().user.uid;
+    if (!uid) {
+      console.error("UID not found for selectBean action.");
+      return;
+    }
+    await shopService.selectBean(uid, beanId);
+    await get().refreshShop(); // Refresh shop state to update selected bean
+  },
+
+  // Trait actions
+  buyTrait: async (traitId, cost) => {
+    const state = get();
+    const uid = state.user.uid;
+    if (!uid) {
+      console.error("UID not found for buyTrait action.");
+      return false;
+    }
+
+    if (state.user.xp >= cost && !state.shop.ownedTraits.includes(traitId)) {
+      // Deduct XP
+      const { newState: userNewState } = await get().addXP(-cost);
+
+      // Buy trait via service
+      const success = await shopService.buyTrait(uid, traitId);
+      if (success) {
+        // Refresh shop state
+        await get().refreshShop();
+        set({ user: userNewState }); // Update user state with new XP
+      }
+      return success;
+    }
+    return false;
+  },
+
+  equipTrait: async (beanId, traitId) => {
+    const state = get();
+    const uid = state.user.uid;
+    if (!uid) {
+      console.error("UID not found for equipTrait action.");
+      return false;
+    }
+
+    if (!state.shop.ownedTraits.includes(traitId)) {
+      return false; // Must own trait to equip
+    }
+
+    const success = await shopService.equipTrait(uid, beanId, traitId);
+    if (success) {
+      await get().refreshShop(); // Refresh shop state
+    }
+    return success;
+  },
+
+  unequipTrait: async (beanId) => {
+    const uid = get().user.uid;
+    if (!uid) {
+      console.error("UID not found for unequipTrait action.");
+      return;
+    }
+    await shopService.unequipTrait(uid, beanId);
+    await get().refreshShop(); // Refresh shop state
+  },
+
+  getActiveBeanTraits: () => {
+    const state = get();
+    const selectedBean = state.shop.selectedBean;
+    return state.shop.beanTraits[selectedBean] || [];
   },
 
   // UI actions

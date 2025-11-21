@@ -31,27 +31,83 @@ This section contains information for developers who want to contribute to or ru
 ### Technology Stack
 
 -   **Frontend:** React (with JavaScript)
--   **Backend:** Node.js with Express.js
+-   **Backend:** Firebase (Authentication, Firestore, Cloud Functions)
 -   **Package Manager:** npm
 
 ### Getting Started
 
 #### Prerequisites
--   Node.js (LTS version recommended)
+-   Node.js (v24.x recommended, to match the deployment environment)
 -   npm (comes with Node.js)
+-   Firebase CLI: `npm install -g firebase-tools`
+-   A Firebase Project: Set up a new project in the Firebase Console (console.firebase.google.com).
 
-#### Installation & Running
+#### Running the App Locally with Emulators (Recommended)
 
-1.  **Client (Frontend):**
+This is the recommended way to develop locally, as it completely isolates your local work from your live Firebase project, prevents accidental data corruption, and speeds up iteration for Cloud Functions.
+
+1.  **Firebase Project Setup (Initial Configuration):**
+    *   *You still need your Firebase project's web configuration (`apiKey`, `projectId`, etc.) in your `client/.env` file.* This is because the Firebase SDK needs these details to initialize, even if it then redirects to the emulators.
+    *   If you haven't already, follow step 1 from "Running the App Locally (Using Live Firebase - Alternative)" below to create your `client/.env` file.
+
+2.  **Functions Setup:**
+    *   The Firebase CLI will automatically download the necessary emulator binaries the first time you run the emulators.
+    *   Navigate to the `functions` directory and install its dependencies:
+    ```bash
+    cd functions
+    npm install
+    ```
+
+3.  **Start Firebase Emulators:**
+    *   Open a **new terminal** window/tab.
+    *   Navigate to your project root (e.g., `cd Focus-Friends-MVP-1`).
+    *   Start the emulators using the `serve` script defined in `functions/package.json`. This will simulate Firebase Authentication, Firestore, and Cloud Functions locally.
+    ```bash
+    npm run serve
+    ```
+    *   Keep this terminal window open; the emulators must be running for your app to connect to them.
+
+4.  **Client Setup (if not already done):**
+    *   Navigate to the `client` directory and install its dependencies:
     ```bash
     cd client
     npm install
-    npm start
     ```
 
-2.  **Server (Backend):**
+5.  **Run the Client:**
+    *   Open another **new terminal** window/tab.
+    *   Navigate to the `client` directory: `cd client`.
+    *   Run the React development server:
     ```bash
-    cd server
-    npm install
     npm start
     ```
+    Your browser should open to `http://localhost:3000`. Your React app will now connect to the local emulators, and any data created or functions triggered will only exist within this local environment.
+
+---
+
+#### Running the App Locally (Using Live Firebase - Alternative)
+
+This method connects your local app directly to your deployed Firebase project. Use this if you specifically want to test against live data, but be aware that local actions *will* affect your cloud project.
+
+1.  **Configure Firebase Keys:**
+    *   In your Firebase project, go to `Project Settings` > `Your apps`.
+    *   Select your web app and find the `firebaseConfig` object.
+    *   Create a file named `.env` inside the `client` directory.
+    *   Copy your config values into `.env`, adding `REACT_APP_` to the start of each key name. For example:
+        ```
+        REACT_APP_FIREBASE_API_KEY="your-api-key"
+        REACT_APP_FIREBASE_AUTH_DOMAIN="your-project-id.firebaseapp.com"
+        # ...and so on for all keys
+        ```
+
+2.  **Install Client Dependencies:**
+    ```bash
+    cd client
+    npm install
+    ```
+
+3.  **Run the Client:**
+    ```bash
+    npm start
+    ```
+    Your browser should open to `http://localhost:3000`. The React app will now communicate directly with your live Firebase services (Authentication, Firestore). When you complete a session, the app writes to Firestore, which will automatically trigger your deployed Cloud Function.

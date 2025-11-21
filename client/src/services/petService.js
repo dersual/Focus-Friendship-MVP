@@ -1,7 +1,15 @@
 // client/src/services/petService.js
 
-const PETS_KEY = "ffm:pets";
-const SELECTED_PET_KEY = "ffm:selectedPet";
+import { db } from "../firebase";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  collection,
+  getDocs,
+  query,
+} from "firebase/firestore";
 
 // Pet types with their characteristics
 export const PET_TYPES = {
@@ -92,78 +100,87 @@ const createPet = (petType) => ({
   favoriteTaskType: null,
 });
 
-// Load all pets from localStorage
-export const getAllPets = () => {
-  try {
-    const stored = localStorage.getItem(PETS_KEY);
-    const pets = stored ? JSON.parse(stored) : {};
-
-    // Ensure default pet exists
-    if (!pets["bean-0"]) {
-      pets["bean-0"] = createPet("bean-0");
-    }
-
-    return pets;
-  } catch (error) {
-    console.error("Error loading pets:", error);
-    return { "bean-0": createPet("bean-0") };
+// Load all pets from Firestore for a given user
+export const getAllPets = async (uid) => {
+  if (!uid) {
+    console.error("getAllPets called without a UID.");
+    return {};
   }
+
+  const petsRef = collection(db, "users", uid, "pets");
+  const q = query(petsRef);
+  const querySnapshot = await getDocs(q);
+
+  let pets = {};
+  querySnapshot.forEach((doc) => {
+    pets[doc.id] = doc.data();
+  });
+
+  // Ensure default pet "bean-0" exists
+  if (!pets["bean-0"]) {
+    const defaultPet = createPet("bean-0");
+    await setDoc(doc(db, "users", uid, "pets", "bean-0"), defaultPet);
+    pets["bean-0"] = defaultPet;
+  }
+
+  return pets;
 };
 
-// Save pets to localStorage
-export const savePets = (pets) => {
-  try {
-    localStorage.setItem(PETS_KEY, JSON.stringify(pets));
-  } catch (error) {
-    console.error("Error saving pets:", error);
+// Get currently selected pet ID from user document in Firestore
+export const getSelectedPetId = async (uid) => {
+  if (!uid) {
+    console.error("getSelectedPetId called without a UID.");
+    return "bean-0";
   }
-};
 
-// Get currently selected pet ID
-export const getSelectedPetId = () => {
-  try {
-    return localStorage.getItem(SELECTED_PET_KEY) || "bean-0";
-  } catch (error) {
-    console.error("Error loading selected pet:", error);
+  const userRef = doc(db, "users", uid);
+  const userSnap = await getDoc(userRef);
+
+  if (userSnap.exists() && userSnap.data().selectedPet) {
+    return userSnap.data().selectedPet;
+  } else {
+    // If not found, set default and update user doc
+    await updateDoc(userRef, { selectedPet: "bean-0" });
     return "bean-0";
   }
 };
 
-// Set selected pet ID
-export const setSelectedPetId = (petId) => {
-  try {
-    localStorage.setItem(SELECTED_PET_KEY, petId);
-  } catch (error) {
-    console.error("Error saving selected pet:", error);
+// Set selected pet ID in user document in Firestore
+export const setSelectedPetId = async (uid, petId) => {
+  if (!uid) {
+    console.error("setSelectedPetId called without a UID.");
+    return;
   }
+  const userRef = doc(db, "users", uid);
+  await updateDoc(userRef, { selectedPet: petId });
 };
 
 // Get selected pet data
-export const getSelectedPet = () => {
-  const pets = getAllPets();
-  const selectedId = getSelectedPetId();
-  return pets[selectedId] || pets["bean-0"];
+export const getSelectedPet = async (uid) => {
+  if (!uid) {
+    console.error("getSelectedPet called without a UID.");
+    return null; // Or some default empty pet object
+  }
+  const pets = await getAllPets(uid);
+  const selectedId = await getSelectedPetId(uid);
+  return pets[selectedId] || pets["bean-0"] || null; // Return null if no default pet either
 };
 
-// Create default pet (Focus Sprout)
-export const createDefaultPet = () => {
-  const defaultPetId = "focus-sprout-0";
-  const defaultPet = {
-    id: defaultPetId,
-    type: "focus-sprout",
-    xp: 0,
-    level: 1,
-    totalSessions: 0,
-    unlockedAt: Date.now(),
-  };
+// Create default pet (Focus Sprout) for a user in Firestore
+export const createDefaultPet = async (uid) => {
+  if (!uid) {
+    console.error("createDefaultPet called without a UID.");
+    return null;
+  }
 
-  // Save to localStorage
-  const pets = getAllPets();
-  pets[defaultPetId] = defaultPet;
-  savePets(pets);
+  const defaultPetId = "bean-0"; // Assuming "bean-0" is the default type and ID
+  const defaultPet = createPet(defaultPetId); // Use the existing createPet helper
 
-  // Set as selected
-  setSelectedPetId(defaultPetId);
+  // Save to Firestore subcollection
+  await setDoc(doc(db, "users", uid, "pets", defaultPetId), defaultPet);
+
+  // Set as selected in user's main document
+  await setSelectedPetId(uid, defaultPetId);
 
   return defaultPet;
 };
@@ -187,23 +204,29 @@ export const getXPForNextLevel = (currentLevel) => {
   return Math.round(50 * 1.2 ** (currentLevel + 1));
 };
 
-// Add XP to a specific pet
-export const addXPToPet = (petId, xpAmount) => {
-  const pets = getAllPets();
-
-  if (!pets[petId]) {
-    console.error(`Pet ${petId} not found`);
+// Add XP to a specific pet in Firestore
+export const addXPToPet = async (uid, petId, xpAmount) => {
+  if (!uid) {
+    console.error("addXPToPet called without a UID.");
     return null;
   }
 
-  const pet = pets[petId];
+  const petRef = doc(db, "users", uid, "pets", petId);
+  const petSnap = await getDoc(petRef);
+
+  if (!petSnap.exists()) {
+    console.error(`Pet ${petId} not found for user ${uid}`);
+    return null;
+  }
+
+  const pet = petSnap.data();
   const oldLevel = pet.level;
 
   pet.xp += xpAmount;
   pet.level = calculatePetLevel(pet.xp);
-  pet.totalSessions += 1;
+  pet.totalSessions = (pet.totalSessions || 0) + 1; // Increment total sessions, handle initial undefined
 
-  savePets(pets);
+  await updateDoc(petRef, pet); // Update the pet document in Firestore
 
   const leveledUp = pet.level > oldLevel;
 
@@ -215,12 +238,18 @@ export const addXPToPet = (petId, xpAmount) => {
   };
 };
 
-// Unlock a new pet
-export const unlockPet = (petType, cost) => {
-  const pets = getAllPets();
+// Unlock a new pet for a user in Firestore
+export const unlockPet = async (uid, petType) => {
+  if (!uid) {
+    console.error("unlockPet called without a UID.");
+    return false;
+  }
 
-  if (pets[petType]) {
-    console.warn(`Pet ${petType} already unlocked`);
+  const petRef = doc(db, "users", uid, "pets", petType);
+  const petSnap = await getDoc(petRef);
+
+  if (petSnap.exists()) {
+    console.warn(`Pet ${petType} already unlocked for user ${uid}`);
     return false;
   }
 
@@ -229,8 +258,8 @@ export const unlockPet = (petType, cost) => {
     return false;
   }
 
-  pets[petType] = createPet(petType);
-  savePets(pets);
+  const newPet = createPet(petType);
+  await setDoc(petRef, newPet); // Save the new pet document to Firestore
 
   return true;
 };
@@ -270,23 +299,23 @@ export const getNextEvolutionStage = (pet) => {
   return null; // Max level reached
 };
 
-// Get pets that can be unlocked with current XP
-export const getUnlockablePets = (userXP) => {
-  const pets = getAllPets();
+// Get pets that can be unlocked with current XP for a user
+export const getUnlockablePets = async (uid, userXP) => {
+  if (!uid) {
+    console.error("getUnlockablePets called without a UID.");
+    return [];
+  }
+
+  const pets = await getAllPets(uid); // Get all pets for the user from Firestore
   const unlockable = [];
 
   Object.entries(PET_TYPES).forEach(([petType, config]) => {
-    if (!pets[petType] && userXP >= config.unlockCost) {
+    // Check if petType is already in the 'pets' object (meaning it's unlocked)
+    if (!pets[petType]) {
       unlockable.push({
         ...config,
         id: petType,
-        canAfford: true,
-      });
-    } else if (!pets[petType]) {
-      unlockable.push({
-        ...config,
-        id: petType,
-        canAfford: false,
+        canAfford: userXP >= config.unlockCost,
       });
     }
   });

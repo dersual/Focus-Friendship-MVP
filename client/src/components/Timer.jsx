@@ -10,6 +10,10 @@ import {
   getEstimatedXP,
   getXPConsequences,
 } from "../services/sessionService.js";
+import {
+  applyTraitBonuses,
+  getTraitBonusDescription,
+} from "../utils/traitUtils";
 
 const Timer = () => {
   const {
@@ -17,6 +21,7 @@ const Timer = () => {
     user,
     timer,
     selectedPet,
+    shop,
     setWorkDuration,
     setBreakDuration,
     setSelectedGoal,
@@ -24,6 +29,7 @@ const Timer = () => {
     addXPToPet,
     applyPenalty,
     completePomodoroForGoal,
+    getActiveBeanTraits,
   } = useAppStore();
 
   const [isBreakTime, setIsBreakTime] = useState(false);
@@ -53,8 +59,27 @@ const Timer = () => {
   const handleTimerComplete = (completionData) => {
     const { xpGained, durationMinutes, isBreak, goalId } = completionData;
 
+    // Get active bean traits for bonus calculation
+    const activeBeanTraits = getActiveBeanTraits();
+
+    // Determine goal category for trait application
+    let goalCategory = null;
+    if (goalId && goals) {
+      const selectedGoal = goals.find((g) => g.id === goalId);
+      goalCategory = selectedGoal?.category;
+    }
+
+    // Apply trait bonuses to XP
+    const traitResult = applyTraitBonuses(xpGained, activeBeanTraits, {
+      isBreak,
+      goalCategory,
+      durationMinutes,
+    });
+
+    const finalXP = traitResult.finalXP;
+
     // Add XP to user
-    const result = addXP(xpGained, {
+    const result = addXP(finalXP, {
       onLevelUp: (newState) => {
         console.log(`Level up! Now level ${newState.level}`);
         // Could show level up animation here
@@ -62,7 +87,7 @@ const Timer = () => {
     });
 
     // Add XP to selected pet with potential bonus
-    if (selectedPet && xpGained > 0) {
+    if (selectedPet && finalXP > 0) {
       // Determine task type based on goal or default to general
       let taskType = "general";
       if (goalId && goals) {
@@ -74,10 +99,10 @@ const Timer = () => {
 
       // Get pet's XP bonus for this task type
       const petConfig = petService.PET_TYPES[selectedPet.type];
-      let petXP = xpGained;
+      let petXP = finalXP;
 
       if (petConfig && petConfig.specialty === taskType && petConfig.xpBonus) {
-        petXP = Math.round(xpGained * petConfig.xpBonus);
+        petXP = Math.round(finalXP * petConfig.xpBonus);
       }
 
       // Check for evolution before adding XP
@@ -101,16 +126,23 @@ const Timer = () => {
       }
 
       console.log(
-        `Pet ${selectedPet.id} gained ${petXP} XP (${petXP !== xpGained ? "with specialty bonus!" : "base amount"})`,
+        `Pet ${selectedPet.id} gained ${petXP} XP (${petXP !== finalXP ? "with specialty bonus!" : "base amount"})`,
       );
     }
 
-    // Show XP gained feedback
-    if (xpGained > 0) {
+    // Show XP gained feedback with trait bonus info
+    if (finalXP > 0) {
+      const traitBonusText = getTraitBonusDescription(
+        traitResult.appliedTraits,
+      );
+      const message = traitBonusText
+        ? `Great job! +${finalXP} XP earned! (${traitBonusText})`
+        : `Great job! +${finalXP} XP earned!`;
+
       setShowXPFeedback({
         type: "gain",
-        amount: xpGained,
-        message: `Great job! +${xpGained} XP earned!`,
+        amount: finalXP,
+        message: message,
       });
       // Clear feedback after 3 seconds
       setTimeout(() => setShowXPFeedback(null), 3000);
@@ -130,7 +162,7 @@ const Timer = () => {
     }
 
     console.log(
-      `Timer completed! ${isBreak ? "Break" : "Work"} session: ${durationMinutes}m, XP: ${xpGained}`,
+      `Timer completed! ${isBreak ? "Break" : "Work"} session: ${durationMinutes}m, XP: ${xpGained} -> ${finalXP} (with traits)`,
     );
   };
 

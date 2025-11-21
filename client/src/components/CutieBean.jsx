@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import useAppStore from "../stores/appStore";
 import * as petService from "../services/petService";
+import { TRAITS } from "../config/traits";
 
 // Import SVG assets
 import Bean0 from "../assets/images/cutie/bean-0.svg";
@@ -28,12 +29,6 @@ const CutieBean = () => {
   const [isLevelingUp, setIsLevelingUp] = useState(false);
   const [showEvolutionPopup, setShowEvolutionPopup] = useState(false);
 
-  // Get list of unlocked companions
-  const companionList = Object.values(pets);
-  const currentCompanionIndex = companionList.findIndex(
-    (pet) => pet.id === selectedPet?.id,
-  );
-
   useEffect(() => {
     const currentLevel = selectedPet?.level || user.level;
     if (currentLevel > displayLevel) {
@@ -51,7 +46,22 @@ const CutieBean = () => {
     } else {
       setDisplayLevel(currentLevel);
     }
-  }, [selectedPet?.level, user.level]);
+  }, [selectedPet?.level, user.level, displayLevel]);
+
+  // Guard clause: Wait for essential data to be loaded from Firestore.
+  if (!user.uid || !selectedPet) {
+    return (
+      <div className="text-center p-5">
+        <p>Loading your companion...</p>
+      </div>
+    );
+  }
+
+  // Get list of unlocked companions
+  const companionList = Object.values(pets);
+  const currentCompanionIndex = companionList.findIndex(
+    (pet) => pet.id === selectedPet?.id,
+  );
 
   // Determine which bean image to show based on level
   const getBeanImage = (level) => {
@@ -75,7 +85,8 @@ const CutieBean = () => {
     const shopBeanEmoji = getDisplayBean();
 
     if (shopBeanEmoji) {
-      // Show shop bean
+      // Show shop bean with traits
+      const equippedTraits = shop.beanTraits[shop.selectedBean] || [];
       return {
         emoji: shopBeanEmoji,
         name: "Bean Buddy",
@@ -83,6 +94,7 @@ const CutieBean = () => {
         xp: user.xp,
         specialty: "general",
         isShopBean: true,
+        traits: equippedTraits,
       };
     }
 
@@ -97,6 +109,7 @@ const CutieBean = () => {
         xp: selectedPet.xp,
         specialty: petConfig?.specialty || "general",
         isShopBean: false,
+        traits: [], // Pets don't have traits for now
       };
     }
 
@@ -107,6 +120,7 @@ const CutieBean = () => {
       xp: user.xp,
       specialty: "general",
       isShopBean: false,
+      traits: [],
     };
   };
 
@@ -202,6 +216,31 @@ const CutieBean = () => {
           {beanInfo.specialty !== "general" && (
             <div className="small text-success">
               <strong>Specialty:</strong> {beanInfo.specialty}
+            </div>
+          )}
+
+          {/* Show equipped traits */}
+          {beanInfo.traits && beanInfo.traits.length > 0 && (
+            <div className="mt-2">
+              <div className="small text-info mb-1">
+                <strong>Equipped Traits:</strong>
+              </div>
+              <div className="d-flex flex-wrap justify-content-center gap-1">
+                {beanInfo.traits.map((traitId) => {
+                  const trait = TRAITS[traitId];
+                  if (!trait) return null;
+                  return (
+                    <span
+                      key={traitId}
+                      className="badge bg-info text-white"
+                      title={trait.description}
+                      style={{ cursor: "help" }}
+                    >
+                      {trait.emoji} {trait.name}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

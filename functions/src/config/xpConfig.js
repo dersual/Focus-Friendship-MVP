@@ -1,4 +1,3 @@
-// server/config/xpConfig.js
 const XP_CONFIG = {
   // Anti-farming settings
   strictness: "balanced", // "lenient", "balanced", "strict"
@@ -16,7 +15,8 @@ const XP_CONFIG = {
 
   // Work-to-break ratio bonus
   workBreakRatioEnabled: true,
-  idealWorkBreakRatio: 4, // Ideal 25:5 = 5:1 ratio, but we use 4 for practical purposes
+  idealWorkBreakRatio: 4, // Ideal 25:5 = 5:1 ratio, but we
+  // use 4 for practical purposes
   maxRatioBonus: 0.2, // Max +20% bonus for good work/break balance
 
   // Pet system
@@ -68,9 +68,9 @@ const computeShortSessionPenalty = (recentShortSessionsCount) => {
 const computeStreakBonus = (currentStreak) => {
   if (!XP_CONFIG.streakBonusEnabled) return 1;
   const bonus = clamp(
-    currentStreak / XP_CONFIG.streakDivisor,
-    0,
-    XP_CONFIG.maxStreakBonus,
+      currentStreak / XP_CONFIG.streakDivisor,
+      0,
+      XP_CONFIG.maxStreakBonus,
   );
   return 1 + bonus;
 };
@@ -82,10 +82,11 @@ const computeWorkBreakRatioBonus = (recentWorkMinutes, recentBreakMinutes) => {
   const actualRatio = recentWorkMinutes / recentBreakMinutes;
   const idealRatio = XP_CONFIG.idealWorkBreakRatio;
 
-  // Calculate how close we are to the ideal ratio (1.0 = perfect, 0.0 = terrible)
+  // Calculate how close we are to the ideal ratio
+  // (1.0 = perfect, 0.0 = terrible)
   const ratioScore = Math.max(
-    0,
-    1 - Math.abs(actualRatio - idealRatio) / idealRatio,
+      0,
+      1 - Math.abs(actualRatio - idealRatio) / idealRatio,
   );
 
   // Apply bonus based on ratio score
@@ -125,12 +126,12 @@ const computeAward = ({
   const taskMultiplier = taskCompleted ? XP_CONFIG.taskCompletionMultiplier : 1;
   const streakBonus = computeStreakBonus(currentStreak);
   const ratioBonus = computeWorkBreakRatioBonus(
-    recentWorkMinutes,
-    recentBreakMinutes,
+      recentWorkMinutes,
+      recentBreakMinutes,
   );
 
   const awardedXP = Math.round(
-    baseXP *
+      baseXP *
       (effectiveMinutes / minutes) *
       shortPenalty *
       taskMultiplier *
@@ -157,19 +158,37 @@ const computeAward = ({
 
 // Count recent short sessions for a user
 const countRecentShortSessions = (
-  userSessions,
-  windowMinutes = XP_CONFIG.shortSessionWindowMinutes,
+    userSessions,
+    windowMinutes = XP_CONFIG.shortSessionWindowMinutes,
 ) => {
   const now = Date.now();
   const windowMs = windowMinutes * 60 * 1000;
   const cutoff = now - windowMs;
 
   return userSessions.filter(
-    (session) =>
-      session.startAt >= cutoff &&
+      (session) =>
+        session.startAt >= cutoff &&
       session.durationMinutes < XP_CONFIG.minEffectiveMinutes &&
       !session.isBreak,
   ).length;
+};
+
+// Calculates XP needed for the next level (User XP)
+const expToNext = (level) => {
+  return Math.round(100 * 1.25 ** level);
+};
+
+// Calculates pet level from XP
+const calculatePetLevel = (xp) => {
+  let level = 1;
+  let totalXpNeeded = 0;
+
+  while (totalXpNeeded <= xp) {
+    totalXpNeeded += Math.round(50 * 1.2 ** level);
+    level++;
+  }
+
+  return Math.max(1, level - 1);
 };
 
 module.exports = {
@@ -180,4 +199,6 @@ module.exports = {
   computeStreakBonus,
   computeAward,
   countRecentShortSessions,
+  expToNext,
+  calculatePetLevel,
 };

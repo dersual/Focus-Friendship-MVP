@@ -1,13 +1,14 @@
-import React, { useEffect } from "react";
-import Timer from "./components/Timer";
+import React, { useEffect, Suspense, lazy } from "react";
 import CutieBean from "./components/CutieBean";
-import Shop from "./components/Shop";
-import Goals from "./components/Goals";
 import BottomNav from "./components/BottomNav";
 import DesktopNav from "./components/DesktopNav";
 import MobileHeader from "./components/MobileHeader";
 import { Card } from "./components/ui";
 import useAppStore from "./stores/appStore";
+
+const Timer = lazy(() => import("./components/Timer"));
+const Shop = lazy(() => import("./components/Shop"));
+const Goals = lazy(() => import("./components/Goals"));
 
 function App() {
   const { ui, shop, initializeApp, toggleShop } = useAppStore();
@@ -135,7 +136,11 @@ function App() {
       <MobileHeader />
 
       <div className="main-content">
-        <div className="container-fluid">{renderMainContent()}</div>
+        <div className="container-fluid">
+          <Suspense fallback={<div>Loading...</div>}>
+            {renderMainContent()}
+          </Suspense>
+        </div>
       </div>
 
       {/* Mobile Navigation */}
@@ -145,7 +150,9 @@ function App() {
       {showModal && (
         <div className="shop-modal-overlay" onClick={handleOverlayClick}>
           <div className="shop-modal">
-            <Shop showCloseButton={true} />
+            <Suspense fallback={<div>Loading...</div>}>
+              <Shop showCloseButton={true} />
+            </Suspense>
           </div>
         </div>
       )}
