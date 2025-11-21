@@ -69,7 +69,7 @@ function App() {
 
     // Mobile: Show based on current page, Desktop: Show all components
     return (
-      <div className="row g-3 g-md-4">
+      <div className="row g-3 g-lg-4">
         {/* CutieBean - Always visible on desktop, conditional on mobile */}
         <div
           className={`col-12 col-lg-4 order-1 order-lg-1 ${getMobileVisibility("timer", "profile")}`}

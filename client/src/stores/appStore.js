@@ -7,6 +7,7 @@ import {
   applyPenalty as applyPenaltyService,
 } from "../services/xpService";
 import * as goalService from "../services/goalService";
+import * as petService from "../services/petService";
 import { enqueueForSync } from "../services/syncService";
 
 const useAppStore = create((set, get) => ({
@@ -27,11 +28,15 @@ const useAppStore = create((set, get) => ({
   // Goals state
   goals: goalService.getActiveGoals(),
 
+  // Pet state
+  pets: petService.getAllPets(),
+  selectedPet: petService.getSelectedPet(),
+
   // Shop state
   shop: {
     isOpen: false,
-    ownedBeans: ["bean-0"], // default bean
-    selectedBean: "bean-0",
+    ownedBeans: ["bean-0"], // legacy - kept for compatibility
+    selectedBean: "bean-0", // legacy - kept for compatibility
   },
 
   // UI state
@@ -44,6 +49,23 @@ const useAppStore = create((set, get) => ({
   initializeApp: () => {
     initializeUserState();
     set({ user: getUserState() });
+    
+    // Initialize pets
+    get().refreshPets();
+    
+    // Set default pet if none selected
+    const selectedPetId = petService.getSelectedPetId();
+    const pets = petService.getAllPets();
+    if (pets[selectedPetId]) {
+      set({ selectedPet: pets[selectedPetId] });
+    } else {
+      // Create and select default pet if none exists
+      const defaultPet = petService.createDefaultPet();
+      set({ 
+        pets: { [defaultPet.id]: defaultPet },
+        selectedPet: defaultPet 
+      });
+    }
   },
 
   // User actions
@@ -178,6 +200,65 @@ const useAppStore = create((set, get) => ({
   // Goal actions
   refreshGoals: () => {
     set({ goals: goalService.getActiveGoals() });
+  },
+
+  completePomodoroForGoal: (goalId) => {
+    const updatedGoals = goalService.completePomodoroForGoal(
+      parseInt(goalId, 10),
+    );
+    set({
+      goals: updatedGoals.filter((g) => g.completedPomodoros < g.pomodoros),
+    });
+  },
+
+  // Pet actions
+  selectPet: (petId) => {
+    petService.setSelectedPetId(petId);
+    set({ 
+      selectedPet: petService.getSelectedPet(),
+    });
+  },
+
+  addXPToPet: (petId, xpAmount) => {
+    const result = petService.addXPToPet(petId, xpAmount);
+    if (result) {
+      set({ 
+        pets: petService.getAllPets(),
+        selectedPet: petService.getSelectedPet(),
+      });
+      return result;
+    }
+    return null;
+  },
+
+  unlockPet: (petType, cost) => {
+    const state = get();
+    const petConfig = petService.PET_TYPES[petType];
+    
+    if (!petConfig) return false;
+    
+    if (state.user.xp >= cost) {
+      // Deduct XP
+      const { newState } = get().addXP(-cost);
+      
+      // Unlock pet
+      const success = petService.unlockPet(petType, cost);
+      if (success) {
+        set({ 
+          pets: petService.getAllPets(),
+          user: newState,
+        });
+      }
+      return success;
+    }
+    return false;
+  },
+
+  refreshPets: () => {
+    set({ 
+      pets: petService.getAllPets(),
+      selectedPet: petService.getSelectedPet(),
+    });
   },
 
   // Shop actions

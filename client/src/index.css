@@ -145,6 +145,56 @@ body {
   margin: 0 auto;
 }
 
+/* Desktop Layout Optimizations - Allow scrolling if needed */
+@media (min-width: 992px) {
+  .app-container {
+    min-height: 100vh;
+    padding: 0.75rem 0;
+  }
+
+  .desktop-nav {
+    margin-bottom: 1rem;
+  }
+
+  .main-content .container-fluid {
+    padding: 0 1rem;
+  }
+
+  .component-card {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Optimize desktop components to fit better */
+  .timer-circle-container {
+    width: min(250px, 70vw);
+    height: min(250px, 70vw);
+  }
+
+  .timer-display {
+    font-size: clamp(1.5rem, 4vw, 2.75rem);
+  }
+
+  /* Compact CutieBean component on desktop */
+  .cutie-bean-container {
+    margin-bottom: 2rem !important;
+  }
+
+  .cutie-bean-container img {
+    max-width: min(180px, 45vw) !important;
+  }
+
+  .stats-grid .row {
+    margin-bottom: 1rem;
+  }
+
+  /* Compact Goals component */
+  .goals-container .goal-item {
+    padding: 1rem !important;
+    margin-bottom: 0.75rem;
+  }
+}
+
 /* Component Cards */
 .component-card {
   background: white;
@@ -165,24 +215,20 @@ body {
   transform: translateY(-2px);
 }
 
-/* Mobile Optimizations */
-@media (max-width: 768px) {
+/* Mobile Optimizations - Allow scrolling */
+@media (max-width: 991px) {
   .app-container {
-    padding: 0 0 6rem 0; /* No side padding, bottom padding for nav */
+    min-height: 100vh;
+    padding: 0 0 6rem 0; /* Bottom padding for navigation */
+  }
+
+  .mobile-header {
+    margin-bottom: 1rem;
+    padding: 1rem;
   }
 
   .main-content .container-fluid {
-    padding: 0 0.75rem; /* Side padding only on content */
-  }
-
-  .mobile-header .container-fluid {
-    padding: 0 1rem; /* Consistent with desktop nav */
-  }
-
-  .app-title {
-    font-size: 1.75rem !important;
-    margin-bottom: 1.5rem !important;
-    margin-top: 0.5rem !important;
+    padding: 0 0.75rem;
   }
 
   .component-card {
@@ -192,12 +238,13 @@ body {
   }
 
   .timer-controls {
-    gap: 12px !important;
+    gap: 10px !important;
   }
 
   .timer-controls .btn {
     width: 100%;
     margin: 0 !important;
+    padding: 0.75rem 1rem;
   }
 
   .timer-controls .d-flex {
@@ -219,6 +266,21 @@ body {
 
   .goal-item {
     padding: 1rem !important;
+  }
+
+  /* Mobile bean display */
+  .cutie-bean-container {
+    margin-bottom: 1.5rem !important;
+  }
+
+  .cutie-bean-container img {
+    max-width: min(160px, 50vw) !important;
+  }
+
+  .app-title {
+    font-size: 1.75rem !important;
+    margin-bottom: 1.25rem !important;
+    margin-top: 0.5rem !important;
   }
 }
 
@@ -378,36 +440,32 @@ body {
 }
 
 @media (max-width: 480px) {
-  .app-container {
-    padding: 0.5rem 0.5rem 5.5rem 0.5rem; /* Reduced padding for very small screens */
-  }
-
   .component-card {
-    padding: 1rem;
-    margin-bottom: 0.75rem;
+    padding: 0.875rem;
+    margin-bottom: 0.5rem;
   }
 
   .timer-circle-container {
-    width: min(250px, 85vw);
-    height: min(250px, 85vw);
+    width: min(200px, 80vw);
+    height: min(200px, 80vw);
   }
 
   .app-title {
-    font-size: 1.5rem !important;
-    margin-bottom: 1rem !important;
+    font-size: 1.25rem !important;
+    margin-bottom: 0.75rem !important;
   }
 
   .goal-item {
-    padding: 0.75rem !important;
+    padding: 0.625rem !important;
   }
 
   .btn-sm {
-    padding: 8px 16px;
-    font-size: 0.8rem;
+    padding: 6px 12px;
+    font-size: 0.75rem;
   }
 
   .shop-item .component-card {
-    padding: 0.75rem !important;
+    padding: 0.625rem !important;
   }
 
   .bottom-nav {
@@ -415,8 +473,16 @@ body {
   }
 
   .bottom-nav-item {
-    min-height: 55px;
+    min-height: 50px;
     padding: 0.25rem;
+  }
+
+  .cutie-bean-container img {
+    max-width: min(120px, 50vw) !important;
+  }
+
+  .mobile-header {
+    padding: 0.5rem 0.75rem;
   }
 
   .bottom-nav-item .nav-icon {
@@ -521,4 +587,39 @@ body {
     align-items: flex-start;
     padding-top: 2rem;
   }
+}
+
+/* XP Feedback Animations */
+@keyframes slideDown {
+  0% {
+    transform: translate(-50%, -100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: translate(-50%, -20px) scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(-50%, 5px) scale(1.1);
+  }
+  100% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Enhanced alert styles for XP feedback */
+.alert-success {
+  animation: bounceIn 0.5s ease-out;
+}
+
+.alert-danger {
+  animation: slideDown 0.3s ease-out;
 }

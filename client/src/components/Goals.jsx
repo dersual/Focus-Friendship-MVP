@@ -5,9 +5,12 @@ import { Button } from "./ui";
 import * as goalService from "../services/goalService";
 
 const Goals = () => {
-  const { goals, refreshGoals } = useAppStore();
+  const { goals, refreshGoals, timer, setSelectedGoal, addXP } = useAppStore();
   const [newGoalTitle, setNewGoalTitle] = useState("");
   const [newGoalPomodoros, setNewGoalPomodoros] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showXPReward, setShowXPReward] = useState(null);
+  const goalsPerPage = 4; // Limit goals to prevent overflow
 
   useEffect(() => {
     refreshGoals();
@@ -27,13 +30,53 @@ const Goals = () => {
   };
 
   const handleDeleteGoal = (goalId) => {
+    // Award XP for completed goals before deleting
+    const goal = goals.find(g => g.id === goalId);
+    if (goal && goal.completedPomodoros >= goal.pomodoros) {
+      // Award XP based on number of pomodoros: 50 XP per session
+      const xpReward = goal.pomodoros * 50;
+      addXP(xpReward, {
+        onLevelUp: (newState) => {
+          console.log(`Level up! Now level ${newState.level}`);
+        },
+      });
+      
+      // Show XP reward notification
+      setShowXPReward(`🎉 +${xpReward} XP for completing "${goal.title}"!`);
+      setTimeout(() => setShowXPReward(null), 3000);
+    }
+    
     goalService.deleteGoal(goalId);
     refreshGoals(); // Update store
   };
 
+  const handleGoalClick = (goalId) => {
+    // Set as selected goal for timer
+    setSelectedGoal(goalId);
+  };
+
+  // Calculate pagination
+  const totalPages = Math.ceil(goals.length / goalsPerPage);
+  const startIndex = (currentPage - 1) * goalsPerPage;
+  const paginatedGoals = goals.slice(startIndex, startIndex + goalsPerPage);
+
   return (
     <div className="goals-container">
-      <h3 className="h4 fw-bold mb-4">🎯 My Goals</h3>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h3 className="h4 fw-bold mb-0">🎯 My Goals</h3>
+        {goals.length > goalsPerPage && (
+          <small className="text-muted">
+            {startIndex + 1}-{Math.min(startIndex + goalsPerPage, goals.length)} of {goals.length}
+          </small>
+        )}
+      </div>
+
+      {/* XP Reward Notification */}
+      {showXPReward && (
+        <div className="alert alert-success py-2 mb-3" role="alert">
+          <small className="fw-bold">{showXPReward}</small>
+        </div>
+      )}
 
       {/* Add Goal Form */}
       <form onSubmit={handleAddGoal} className="mb-4">
@@ -81,15 +124,27 @@ const Goals = () => {
         </div>
       ) : (
         <div className="goals-list">
-          {goals.map((goal) => (
+          {paginatedGoals.map((goal) => (
             <div
               key={goal.id}
-              className="goal-item mb-3 p-3 border rounded-3 bg-light"
+              className={`goal-item mb-3 p-3 border rounded-3 ${
+                timer.selectedGoal === goal.id ? 'border-primary bg-primary bg-opacity-10' : 'bg-light'
+              }`}
+              style={{ cursor: 'pointer' }}
+              onClick={() => handleGoalClick(goal.id)}
             >
               <div className="d-flex justify-content-between align-items-start mb-2">
-                <h6 className="fw-semibold mb-0">{goal.title}</h6>
+                <h6 className="fw-semibold mb-0">
+                  {goal.title}
+                  {timer.selectedGoal === goal.id && (
+                    <span className="ms-2 badge bg-primary">Selected</span>
+                  )}
+                </h6>
                 <button
-                  onClick={() => handleDeleteGoal(goal.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteGoal(goal.id);
+                  }}
                   className="btn btn-sm btn-outline-danger rounded-circle"
                   style={{ width: "32px", height: "32px", padding: 0 }}
                   aria-label="Delete goal"
@@ -115,11 +170,49 @@ const Goals = () => {
               <small className="text-muted">
                 {goal.completedPomodoros} / {goal.pomodoros} sessions completed
                 {goal.completedPomodoros >= goal.pomodoros && (
-                  <span className="text-success fw-bold ms-1">✓ Complete!</span>
+                  <span className="text-success fw-bold ms-1">✓ Complete! Click ✕ for XP</span>
                 )}
               </small>
             </div>
           ))}
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="d-flex justify-content-center mt-3">
+              <nav>
+                <ul className="pagination pagination-sm mb-0">
+                  <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                    <button 
+                      className="page-link"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      ‹
+                    </button>
+                  </li>
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <li key={i + 1} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}>
+                      <button 
+                        className="page-link"
+                        onClick={() => setCurrentPage(i + 1)}
+                      >
+                        {i + 1}
+                      </button>
+                    </li>
+                  ))}
+                  <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                    <button 
+                      className="page-link"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      ›
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          )}
         </div>
       )}
     </div>

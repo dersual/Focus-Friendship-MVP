@@ -4,25 +4,23 @@ This project is for "Focus Friendship," a web application that gamifies focus se
 
 ## Approved Technical Plan
 
-### Phase 1: Core Focus MVP
-This phase focuses on building the standalone Pomodoro and pet experience.
+### Phase 1: Core Pet & Progress MVP
+This phase focuses on the essential loop: focusing to evolve a single pet.
+1.  **Backend & Setup:** Complete the simple Express backend for session logging.
+2.  **Asset Generation:** Create placeholder images for the visible evolution stages of the first pet.
+3.  **Core Services:** Implement services to manage XP and leveling for a single pet in `localStorage`.
+4.  **Core UI:** Build the `Timer` component and the `CutieBean` pet component that visibly changes as it levels up.
 
-1.  **Project Setup:**
-    *   Use the name "Focus Friendship" in the application.
-    *   Copy the user-provided image to `client/src/assets/images/` for the pet component.
-2.  **Backend Setup (Simple):** Create a minimal Express server with `POST /api/sessions` and `POST /api/user/sync` endpoints for basic data logging.
-3.  **Frontend Service Layer:** Build `xpService` and `syncService` for local XP/level management and offline data queueing.
-4.  **Core UI Components:** Build the `Timer`, `CutieBean` (using the provided image), and `ConfirmModal` components.
-5.  **Styling, Testing, and Docs:** Complete the initial implementation as planned.
+### Phase 2: Customization & Goals
+This phase expands the core experience with more personalization.
+1.  **Expand Core Services:** Rework the services to manage a collection of multiple pets and user-defined goals.
+2.  **New UI - Goals:** Build a `GoalManager` component for users to set and track personal goals.
+3.  **New UI - Pet Switching:** Build a `PetSelector` component to allow users to switch between different unlocked pets.
 
-### Phase 2: Social & Scheduling Features
-After the core application is working, build the social features on top of it.
-
-1.  **User Authentication:** Implement a "Sign in with Google" system.
-2.  **Database Integration:** Add a database to the backend to store users, friends, and session history.
-3.  **Friends System:** Create APIs and UI for users to add and view friends.
-4.  **Google Calendar Integration:** Connect to the Google Calendar API to schedule and view focus sessions.
-5.  **Social Accountability:** Display friend activity and status.
+### Phase 3: Social & Scheduling Features (Future)
+1.  **User Authentication:** Implement "Sign in with Google."
+2.  **Database Integration:** Add a full database to the backend.
+3.  **Friends System & Calendar:** Implement friends lists and Google Calendar integration.
 
 ## Color Palette
 
@@ -34,3 +32,4 @@ After the core application is working, build the social features on top of it.
 
 ## User-Defined Rules
 - also explain and show everything step by step, after showing the plan, allow me a chance to approve or not approve it, and then do this step by step
+- keep the 2 phase structure, just push back scheduling with friends to phase 3 ig (interpreted as a 3-phase structure)

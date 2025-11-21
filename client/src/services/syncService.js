@@ -35,6 +35,10 @@ export const enqueueForSync = (type, data) => {
 
 // Attempts to process the sync queue
 export const processSyncQueue = async () => {
+  // Temporarily disable sync to prevent network errors in local development
+  console.log('Sync service temporarily disabled for local development');
+  return;
+  
   const queue = getSyncQueue();
   if (queue.length === 0) {
     return;
