@@ -47,57 +47,49 @@ const useAppStore = create((set, get) => ({
 
   // Actions
   initializeApp: () => {
-    // Firebase Authentication
     onAuthStateChanged(auth, async (user) => {
+      let uid;
       if (user) {
-        const uid = user.uid;
-        // User is signed in.
+        uid = user.uid;
         console.log("Firebase User UID:", uid);
-
-        const userRef = doc(db, "users", uid);
-        onSnapshot(userRef, (doc) => {
-          if (doc.exists()) {
-            set((state) => ({ user: { uid, ...doc.data() } }));
-          } else {
-            // Document does not exist, create it with initial state
-            xpService.getUserState(uid).then(userState => {
-              set((state) => ({ user: { uid, ...userState } }));
-            });
-          }
-        });
-
-        // Load pets from Firestore
-        await get().refreshPets(); // Calls refreshPets with the now available UID
-
-        // Load goals from Firestore
-        await get().refreshGoals(); // Calls refreshGoals with the now available UID
-
-        // Load shop state from Firestore
-        await get().refreshShop(); // Calls refreshShop with the now available UID
       } else {
         // No user is signed in, sign in anonymously.
         console.log("No Firebase user found, signing in anonymously...");
         try {
-          const uid = await signIn();
+          uid = await signIn();
           console.log("Anonymous sign-in successful. UID:", uid);
-
-          // After anonymous sign-in, initialize user state and pets
-          const userState = await xpService.getUserState(uid); // Will create if not exists
-          set((state) => ({ user: { uid, ...userState } }));
-
-          await get().refreshPets(); // Calls refreshPets with the now available UID
-
-          // Load goals from Firestore for new user
-          await get().refreshGoals(); // Calls refreshGoals with the now available UID
-
-          // Initialize shop state for new user in Firestore
-          await get().refreshShop(); // Calls refreshShop with the now available UID
         } catch (error) {
-          console.error("Anonymous sign-in failed during app initialization:", error);
+          console.error(
+            "Anonymous sign-in failed during app initialization:",
+            error,
+          );
+          return; // Stop initialization if sign-in fails
         }
       }
-    });
 
+      if (uid) {
+        // Set the UID in the store immediately so other actions can use it
+        set({ user: { uid } });
+
+        // Set up the real-time listener for the user document (for XP, etc.)
+        const userRef = doc(db, "users", uid);
+        onSnapshot(userRef, (doc) => {
+          if (doc.exists()) {
+            set((state) => ({ user: { ...state.user, ...doc.data() } }));
+          } else {
+            // This will create the user document if it's missing
+            xpService.getUserState(uid).then((userState) => {
+              set((state) => ({ user: { ...state.user, ...userState } }));
+            });
+          }
+        });
+
+        // With the UID now set, fetch the initial collections
+        await get().refreshPets();
+        await get().refreshGoals();
+        await get().refreshShop();
+      }
+    });
   },
 
   // User actions
