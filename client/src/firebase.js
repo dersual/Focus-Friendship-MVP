@@ -20,12 +20,11 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // Connect to Firebase Emulators if in development mode 
-/*
 if (process.env.NODE_ENV === 'development') {
   console.log('Connecting to Firebase Emulators...');
   connectAuthEmulator(auth, 'http://localhost:9099');
   connectFirestoreEmulator(db, 'localhost', 8080);
-}*/
+}
 
 /**
  * Signs in the user anonymously and returns the user's UID.
