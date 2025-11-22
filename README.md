@@ -17,7 +17,7 @@ Welcome to Focus Friendship! This application is designed to help you stay focus
 
 ## For Developers
 
-This section provides instructions for setting up and running the project locally.
+This section provides instructions for setting up, running, and deploying the project.
 
 ### 1. One-Time Setup
 
@@ -41,7 +41,7 @@ First, complete these steps to get the project ready.
     *   Under "Your apps", select your web app and find the `firebaseConfig` object.
     *   Copy your project's keys into `client/.env`.
 
-### 2. Running the Development Server
+### 2. Development Workflow
 
 For daily development, you will need two terminals running simultaneously.
 
@@ -57,37 +57,38 @@ In a second terminal, from the `client` directory, run:
 ```bash
 npm start
 ```
-This starts the frontend development server and will open `http://localhost:3000` in your browser. The app will connect to the emulators you started in the other terminal.
+This starts the frontend development server at `http://localhost:3000`.
 
-### 3. Building and Testing for Production
+### 3. Testing The Production Build Locally
 
-To test the application as it would behave in a live environment, you can create and serve a production build locally.
+Before deploying, you can build and test the production version of your app on your local machine.
 
-1.  **Build the Production App:**
-    *   From the `client` directory, run:
+1.  **Build the App:** From the project root, run:
     ```bash
-    npm run build
+    npm run build --prefix client
     ```
-    This bundles the app for production and places the output in the `client/dist` directory.
-
-2.  **Serve the Production Build:**
-    *   After the build is complete, run the following from the `client` directory:
+2.  **Serve the Build:** After the build is complete, from the `client` directory, run:
     ```bash
     npm run serve
     ```
-    This will serve the contents of `client/dist` on `http://localhost:3000`. When you visit this URL, the app will be using your live Firebase services, not the local emulators.
+    This will serve your production code on `http://localhost:3000`. When you visit this URL, the app will be using your **live** Firebase services (not the emulators).
 
-### Available Scripts
+### 4. Deploying to Production
 
-Here is a summary of the most important scripts, based on the `package.json` files.
+Once you have tested your production build, you can deploy it.
 
-#### `client` Scripts
--   `npm start`: Starts the development server with hot-reloading.
--   `npm run build`: Creates a production-ready build of the app.
--   `npm run serve`: Serves the production build locally for testing.
--   `npm test`: Runs unit tests.
+#### Option 1: Manual Deployment
+This is the simplest way to deploy your changes. From the project root, run:
+```bash
+firebase deploy --only hosting
+```
 
-#### `functions` Scripts
--   `npm run lint --prefix functions`: Lints the backend Cloud Functions code.
--   `npm run deploy --prefix functions`: Deploys only the Cloud Functions to Firebase.
--   `npm run logs --prefix functions`: Displays logs from the deployed Cloud Functions.
+#### Option 2: Automated Deployment (via GitHub Actions)
+This method automatically builds and deploys your app every time you push code to the `main` branch.
+
+**To set this up:**
+1.  **Generate a Firebase CI Token:** In your terminal, run `firebase login:ci`. Copy the generated token.
+2.  **Add Secrets to GitHub:** In your GitHub repository, go to `Settings` > `Secrets and variables` > `Actions` and click `New repository secret` to add the following:
+    *   `FIREBASE_TOKEN`: Paste the token you just generated.
+    *   You must also add secrets for all the variables in your `.env` file (e.g., `REACT_APP_FIREBASE_API_KEY`).
+3.  **Workflow File:** A workflow file at `.github/workflows/deploy.yml` is required. I will create this file for you in the next step.
