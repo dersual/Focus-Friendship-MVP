@@ -70,9 +70,10 @@ module.exports = (env, argv) => {
       })
     ],
     devServer: {
-      static: {
-        directory: path.join(__dirname, "dist"),
-      },
+      static: [
+        { directory: path.join(__dirname, "dist") },
+        { directory: path.join(__dirname, "public") },
+      ],
       compress: true,
       port: 3000, // Changed from 8080 to avoid conflict with Firestore emulator
       open: true,

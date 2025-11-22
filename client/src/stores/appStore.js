@@ -1,6 +1,7 @@
 // client/src/stores/appStore.js
 import { create } from "zustand";
 import { auth, onAuthStateChanged, signIn, db } from "../firebase"; // Added db
+import { onSnapshot, doc } from "firebase/firestore";
 import * as xpService from "../services/xpService";
 import * as goalService from "../services/goalService";
 import * as petService from "../services/petService";
@@ -53,9 +54,17 @@ const useAppStore = create((set, get) => ({
         // User is signed in.
         console.log("Firebase User UID:", uid);
 
-        // Load user state from Firestore using xpService
-        const userState = await xpService.getUserState(uid);
-        set((state) => ({ user: { uid, ...userState } }));
+        const userRef = doc(db, "users", uid);
+        onSnapshot(userRef, (doc) => {
+          if (doc.exists()) {
+            set((state) => ({ user: { uid, ...doc.data() } }));
+          } else {
+            // Document does not exist, create it with initial state
+            xpService.getUserState(uid).then(userState => {
+              set((state) => ({ user: { uid, ...userState } }));
+            });
+          }
+        });
 
         // Load pets from Firestore
         await get().refreshPets(); // Calls refreshPets with the now available UID

@@ -34,7 +34,6 @@ const Timer = () => {
 
   const [isBreakTime, setIsBreakTime] = useState(false);
   const [showStopConfirm, setShowStopConfirm] = useState(false);
-  const [showXPFeedback, setShowXPFeedback] = useState(null); // { type: 'gain'|'loss', amount: number, message: string }
   const [showStartConfirm, setShowStartConfirm] = useState(false);
   const [showTimerSettings, setShowTimerSettings] = useState(false);
   const [estimatedXP, setEstimatedXP] = useState(0);
@@ -57,96 +56,7 @@ const Timer = () => {
 
   // Timer completion handler
   const handleTimerComplete = (completionData) => {
-    const { xpGained, durationMinutes, isBreak, goalId } = completionData;
-
-    // Get active bean traits for bonus calculation
-    const activeBeanTraits = getActiveBeanTraits();
-
-    // Determine goal category for trait application
-    let goalCategory = null;
-    if (goalId && goals) {
-      const selectedGoal = goals.find((g) => g.id === goalId);
-      goalCategory = selectedGoal?.category;
-    }
-
-    // Apply trait bonuses to XP
-    const traitResult = applyTraitBonuses(xpGained, activeBeanTraits, {
-      isBreak,
-      goalCategory,
-      durationMinutes,
-    });
-
-    const finalXP = traitResult.finalXP;
-
-    // Add XP to user
-    const result = addXP(finalXP, {
-      onLevelUp: (newState) => {
-        console.log(`Level up! Now level ${newState.level}`);
-        // Could show level up animation here
-      },
-    });
-
-    // Add XP to selected pet with potential bonus
-    if (selectedPet && finalXP > 0) {
-      // Determine task type based on goal or default to general
-      let taskType = "general";
-      if (goalId && goals) {
-        const selectedGoal = goals.find((g) => g.id === goalId);
-        if (selectedGoal?.category) {
-          taskType = selectedGoal.category.toLowerCase();
-        }
-      }
-
-      // Get pet's XP bonus for this task type
-      const petConfig = petService.PET_TYPES[selectedPet.type];
-      let petXP = finalXP;
-
-      if (petConfig && petConfig.specialty === taskType && petConfig.xpBonus) {
-        petXP = Math.round(finalXP * petConfig.xpBonus);
-      }
-
-      // Check for evolution before adding XP
-      const previousLevel = selectedPet.level;
-      const previousEvolution = petService.getPetEvolutionStage(selectedPet);
-
-      // Award XP to the pet
-      addXPToPet(selectedPet.id, petXP);
-
-      // Check for evolution after adding XP
-      const updatedPets = petService.getAllPets();
-      const updatedPet = updatedPets[selectedPet.id];
-
-      if (updatedPet && updatedPet.level > previousLevel) {
-        const newEvolution = petService.getPetEvolutionStage(updatedPet);
-
-        // Show evolution animation if the evolution stage changed
-        if (newEvolution && newEvolution.level !== previousEvolution?.level) {
-          setShowEvolution(updatedPet);
-        }
-      }
-
-      console.log(
-        `Pet ${selectedPet.id} gained ${petXP} XP (${petXP !== finalXP ? "with specialty bonus!" : "base amount"})`,
-      );
-    }
-
-    // Show XP gained feedback with trait bonus info
-    if (finalXP > 0) {
-      const traitBonusText = getTraitBonusDescription(
-        traitResult.appliedTraits,
-      );
-      const message = traitBonusText
-        ? `Great job! +${finalXP} XP earned! (${traitBonusText})`
-        : `Great job! +${finalXP} XP earned!`;
-
-      setShowXPFeedback({
-        type: "gain",
-        amount: finalXP,
-        message: message,
-      });
-      // Clear feedback after 3 seconds
-      setTimeout(() => setShowXPFeedback(null), 3000);
-    }
+    const { durationMinutes, isBreak, goalId } = completionData;
 
     // Update goal progress if a goal was selected
     if (goalId && !isBreak) {
@@ -162,23 +72,8 @@ const Timer = () => {
     }
 
     console.log(
-      `Timer completed! ${isBreak ? "Break" : "Work"} session: ${durationMinutes}m, XP: ${xpGained} -> ${finalXP} (with traits)`,
+      `Timer completed! ${isBreak ? "Break" : "Work"} session: ${durationMinutes}m`,
     );
-  };
-
-  // Timer penalty handler
-  const handleTimerPenalty = (penaltyData) => {
-    const penaltyResult = applyPenalty(penaltyData);
-
-    // Show XP loss feedback
-    setShowXPFeedback({
-      type: "loss",
-      amount: penaltyData.amount || 10,
-      message: `Focus broken! -${penaltyData.amount || 10} XP penalty`,
-    });
-    // Clear feedback after 4 seconds (longer for negative feedback)
-    setTimeout(() => setShowXPFeedback(null), 4000);
-    setIsBreakTime(false); // Reset break mode on penalty
   };
 
   // Initialize timer hook
@@ -196,7 +91,7 @@ const Timer = () => {
     canPause,
     canResume,
     canStop,
-  } = useTimer(handleTimerComplete, handleTimerPenalty);
+  } = useTimer(handleTimerComplete, applyPenalty);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -289,28 +184,6 @@ const Timer = () => {
 
   return (
     <div className="text-center">
-      {/* XP Feedback Overlay */}
-      {showXPFeedback && (
-        <div
-          className={`alert ${showXPFeedback.type === "gain" ? "alert-success" : "alert-danger"} position-fixed`}
-          style={{
-            top: "20px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 1050,
-            minWidth: "250px",
-            animation: "slideDown 0.3s ease-out",
-          }}
-        >
-          <div className="d-flex align-items-center justify-content-center">
-            <span className="me-2" style={{ fontSize: "1.2em" }}>
-              {showXPFeedback.type === "gain" ? "🎉" : "😔"}
-            </span>
-            <strong>{showXPFeedback.message}</strong>
-          </div>
-        </div>
-      )}
-
       {/* Timer Type Header */}
       <div className="mb-3">
         <h3

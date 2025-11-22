@@ -22,7 +22,7 @@ const Goals = () => {
   const handleAddGoal = (e) => {
     e.preventDefault();
     if (newGoalTitle.trim() && newGoalPomodoros > 0) {
-      goalService.addGoal({
+      goalService.addGoal(uid, {
         title: newGoalTitle,
         pomodoros: parseInt(newGoalPomodoros, 10),
       });
@@ -49,7 +49,7 @@ const Goals = () => {
       setTimeout(() => setShowXPReward(null), 3000);
     }
 
-    goalService.deleteGoal(goalId);
+    goalService.deleteGoal(uid, goalId);
     refreshGoals(); // Update store
   };
 

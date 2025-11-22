@@ -1,17 +1,20 @@
 // client/src/hooks/useTimer.js
 import { useState, useEffect, useRef, useCallback } from "react";
+import useAppStore from "../stores/appStore";
 import {
   createSession,
-  enqueueSession,
+  addSession,
   completeSession,
   interruptSession,
-  startSession,
 } from "../services/sessionService";
 
 const TIMER_UPDATE_INTERVAL = 100; // Update every 100ms for smooth progress
 const GRACE_PERIOD_MS = 2000; // 2 second grace period before applying penalties
 
 const useTimer = (onComplete, onPenalty) => {
+  const { user } = useAppStore();
+  const uid = user?.uid;
+
   const [session, setSession] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isActive, setIsActive] = useState(false);
@@ -89,7 +92,7 @@ const useTimer = (onComplete, onPenalty) => {
 
   // Start timer
   const startTimer = useCallback(
-    (
+    async (
       durationMinutes,
       isBreak = false,
       goalId = null,
@@ -102,7 +105,14 @@ const useTimer = (onComplete, onPenalty) => {
 
       const newSession = createSession(durationMinutes, isBreak, goalId);
       newSession.tasksCompleted = tasksCompleted; // Add task completion tracking
-      setSession(newSession);
+      
+      const addedSession = await addSession(uid, newSession);
+      if (!addedSession) {
+        console.error("Failed to add session to Firestore.");
+        return false;
+      }
+
+      setSession(addedSession);
       setTimeLeft(durationMinutes * 60);
       setProgress(0);
       setIsActive(true);
@@ -112,14 +122,10 @@ const useTimer = (onComplete, onPenalty) => {
       totalPausedTimeRef.current = 0;
       pausedAtRef.current = null;
 
-      // Queue session for sync and start server session
-      enqueueSession(newSession);
-      startSession(newSession); // Register with server for anti-farming
-
-      console.log(`Timer started: ${durationMinutes} minutes`, newSession);
+      console.log(`Timer started: ${durationMinutes} minutes`, addedSession);
       return true;
     },
-    [isActive],
+    [isActive, uid],
   );
 
   // Pause timer
@@ -171,28 +177,10 @@ const useTimer = (onComplete, onPenalty) => {
           )
         : 0;
 
-      if (withPenalty) {
-        const penalty = 10; // Default penalty amount
-        interruptSession(session.sessionId, penalty, actualDurationMinutes)
-          .then((result) => {
-            console.log(
-              `Timer stopped with penalty: ${penalty} XP, actual XP: ${result.xpGained}`,
-            );
-          })
-          .catch((error) => {
-            console.error("Error interrupting session:", error);
-          });
-      } else {
-        interruptSession(session.sessionId, 0, actualDurationMinutes)
-          .then((result) => {
-            console.log(
-              `Timer stopped without penalty, XP gained: ${result.xpGained}`,
-            );
-          })
-          .catch((error) => {
-            console.error("Error stopping session:", error);
-          });
-      }
+      interruptSession(uid, session, actualDurationMinutes)
+        .catch((error) => {
+          console.error("Error interrupting session:", error);
+        });
 
       // Reset state
       setIsActive(false);
@@ -208,7 +196,7 @@ const useTimer = (onComplete, onPenalty) => {
 
       return true;
     },
-    [isActive, session],
+    [isActive, session, uid],
   );
 
   // Complete timer
@@ -228,42 +216,24 @@ const useTimer = (onComplete, onPenalty) => {
         )
       : session.durationMinutes;
 
-    // Use new async completeSession function
     completeSession(
-      session.sessionId,
+      uid,
+      session,
       actualDurationMinutes,
-      session.tasksCompleted,
     )
-      .then((result) => {
-        console.log(`Timer completed! XP gained: ${result.xpGained}`);
-
+      .then(() => {
         if (onComplete) {
           onComplete({
             session,
-            xpGained: result.xpGained,
             durationMinutes: actualDurationMinutes,
             isBreak: session.isBreak,
             goalId: session.goalId,
             tasksCompleted: session.tasksCompleted,
-            serverValidated: result.serverValidated,
           });
         }
       })
       .catch((error) => {
         console.error("Error completing session:", error);
-        // Fallback to basic XP calculation
-        const fallbackXP = Math.round(session.durationMinutes * 10);
-        if (onComplete) {
-          onComplete({
-            session,
-            xpGained: fallbackXP,
-            durationMinutes: actualDurationMinutes,
-            isBreak: session.isBreak,
-            goalId: session.goalId,
-            tasksCompleted: session.tasksCompleted,
-            serverValidated: false,
-          });
-        }
       });
 
     // Reset state
@@ -277,7 +247,7 @@ const useTimer = (onComplete, onPenalty) => {
     totalPausedTimeRef.current = 0;
     pausedAtRef.current = null;
     visibilityTimeRef.current = null;
-  }, [session, onComplete]);
+  }, [session, onComplete, uid]);
 
   // Format time for display
   const formatTime = useCallback((seconds) => {
